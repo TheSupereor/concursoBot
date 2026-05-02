@@ -1,6 +1,6 @@
 import { Subscriber } from "../../domain/entities/Subscriber";
 import { Vacancy } from "../../domain/entities/Vacancy";
-import { ISubscriberRepository } from "../../domain/ports/IAssinanteRepository";
+import { ISubscriberRepository } from "../../domain/ports/ISubscriberRepository";
 import { INotificationService } from "../../domain/ports/INotificationService";
 import { Preference } from "../../domain/value-objects/Preference";
 import { Salary } from "../../domain/value-objects/Salary";

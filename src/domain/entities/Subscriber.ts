@@ -18,6 +18,10 @@ export class Subscriber {
 		this.preferences.push(preference);
 	}
 
+	removePreferenceByArea (areaToRemove: string): void {
+		this.preferences = this.preferences.filter(pref => pref.area !== areaToRemove);
+	}
+
 	// business rule matching
 	hasInterest(vacancy: Vacancy): boolean {
 		if (!this.isActive) return false;
