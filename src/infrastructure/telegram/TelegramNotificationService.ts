@@ -56,4 +56,23 @@ Acesse o portal para mais detalhes.
       // Aqui entraria a lógica de mandar para a DLQ (Dead Letter Queue) do RabbitMQ e Retry
     }
   }
+
+  async sendCustomAlert(subscriber: Subscriber, text: string): Promise<void> {
+    try {
+      // Aqui está a mágica! Em vez de chamar o axios direto, nós agendamos (schedule) a chamada.
+      // Se chegarem 5000 pedidos de uma vez, o Bottleneck enfileira e solta 1 a cada 35ms.
+      await this.limiter.schedule(() => 
+        axios.post(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+          chat_id: subscriber.telegramId,
+          text: text,
+          parse_mode: 'Markdown'
+        })
+      );
+      
+      console.log(`[Telegram] Alerta customizado enviado para ${subscriber.telegramId}`);
+    } catch (error) {
+      console.error(`Falha ao enviar mensagem para ${subscriber.telegramId}`, error);
+      // Aqui entraria a lógica de mandar para a DLQ (Dead Letter Queue) do RabbitMQ e Retry
+    }
+  }
 }

@@ -7,8 +7,16 @@ export class Subscriber {
 
 	constructor (
 		public readonly telegramId: string,
-		public isActive: boolean = true
+		public isActive: boolean = false
 	) {}
+
+	activateSubscription(): void {
+		this.isActive = true;
+	}
+
+	cancelSubscription(): void {
+		this.isActive = false;
+	}
 
 	// aggregation root
 	addPreference (preference: Preference): void {

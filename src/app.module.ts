@@ -21,6 +21,8 @@ import { RemovePreferenceUseCase } from './application/use-cases/removePreferenc
 import { ISubscriberRepository } from './domain/ports/ISubscriberRepository';
 import { AddPreferenceUseCase } from './application/use-cases/addPreferenceUseCase';
 import { NotificationLogOrmEntity } from './domain/entities/NotificationLogOrmEntity';
+import { ProcessApprovedPaymentUseCase } from './application/use-cases/processApprovedPaymentUseCase';
+import { WebhookController } from './infrastructure/http/WebhookController';
 
 
 @Module({
@@ -93,10 +95,19 @@ import { NotificationLogOrmEntity } from './domain/entities/NotificationLogOrmEn
         new RemovePreferenceUseCase(subscriperRepo),
       inject: ['ISubscriberRepository'],
     },
+    {
+      provide: ProcessApprovedPaymentUseCase,
+      useFactory: (subscriperRepo: ISubscriberRepository, notification: TelegramNotificationService) => 
+        new ProcessApprovedPaymentUseCase(subscriperRepo, notification),
+      inject: ['ISubscriberRepository', 'INotificationService'],
+    },
 
     // --- ENTRADAS (Portas de Entrada / Gatilhos) ---
     TelegramBotUpdate, // Responde ao /start
     VacancyConsumer,      // Responde ao RabbitMQ
   ],
+  controllers: [
+    WebhookController,
+  ]
 })
 export class AppModule { }
