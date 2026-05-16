@@ -12,18 +12,20 @@ import { TelegramNotificationService } from './infrastructure/telegram/TelegramN
 import { TelegramBotUpdate } from './infrastructure/telegram/TelegramBotUpdate';
 import { VacancyConsumer } from './infrastructure/messaging/VacancyConsumer';
 import { MysqlSubscriberRepository } from './infrastructure/database/repositories/MysqlAssinanteRepository';
+import { MysqlNotificationLogRepository } from './infrastructure/database/repositories/MysqlNotificationLogRepository';
+import { ISubscriberRepository } from './domain/ports/ISubscriberRepository';
 
 // --- Casos de Uso (Aplicação) ---
 import { NotifySubscriberUseCase } from './application/use-cases/NotifySubscriberUseCase';
 import { SignUpSubscriberUseCase } from './application/use-cases/SignUpSubscriberUseCase';
-import { MysqlNotificationLogRepository } from './infrastructure/database/repositories/MysqlNotificationLogRepository';
 import { RemovePreferenceUseCase } from './application/use-cases/removePreferenceUseCase';
-import { ISubscriberRepository } from './domain/ports/ISubscriberRepository';
 import { AddPreferenceUseCase } from './application/use-cases/addPreferenceUseCase';
 import { NotificationLogOrmEntity } from './domain/entities/NotificationLogOrmEntity';
 import { ProcessApprovedPaymentUseCase } from './application/use-cases/processApprovedPaymentUseCase';
-import { WebhookController } from './infrastructure/http/WebhookController';
+import { CancelSubscriptionUseCase } from './application/use-cases/cancelSubscription';
 
+// --- Controllers ---
+import { WebhookController } from './infrastructure/http/WebhookController';
 
 @Module({
   imports: [
@@ -43,7 +45,11 @@ import { WebhookController } from './infrastructure/http/WebhookController';
         synchronize: true, // Em produção, use migrations!
       }),
     }),
-    TypeOrmModule.forFeature([SubscriberOrmEntity, PreferenceOrmEntity, NotificationLogOrmEntity]),
+    TypeOrmModule.forFeature([
+      SubscriberOrmEntity,
+      PreferenceOrmEntity,
+      NotificationLogOrmEntity,
+    ]),
 
     // Conexão com o Bot do Telegram
     TelegrafModule.forRootAsync({
@@ -74,14 +80,22 @@ import { WebhookController } from './infrastructure/http/WebhookController';
     // Usamos useFactory para injetar as interfaces corretamente
     {
       provide: SignUpSubscriberUseCase,
-      useFactory: (repo: MysqlSubscriberRepository) => new SignUpSubscriberUseCase(repo),
+      useFactory: (repo: MysqlSubscriberRepository) =>
+        new SignUpSubscriberUseCase(repo),
       inject: ['ISubscriberRepository'],
     },
     {
       provide: NotifySubscriberUseCase,
-      useFactory: (repo: MysqlSubscriberRepository, notification: TelegramNotificationService, notifLog: MysqlNotificationLogRepository) =>
-        new NotifySubscriberUseCase(repo, notification, notifLog),
-      inject: ['ISubscriberRepository', 'INotificationService', 'INotificationLogRepository'],
+      useFactory: (
+        repo: MysqlSubscriberRepository,
+        notification: TelegramNotificationService,
+        notifLog: MysqlNotificationLogRepository,
+      ) => new NotifySubscriberUseCase(repo, notification, notifLog),
+      inject: [
+        'ISubscriberRepository',
+        'INotificationService',
+        'INotificationLogRepository',
+      ],
     },
     {
       provide: AddPreferenceUseCase,
@@ -91,23 +105,31 @@ import { WebhookController } from './infrastructure/http/WebhookController';
     },
     {
       provide: RemovePreferenceUseCase,
-      useFactory: (subscriperRepo: ISubscriberRepository) => 
+      useFactory: (subscriperRepo: ISubscriberRepository) =>
         new RemovePreferenceUseCase(subscriperRepo),
       inject: ['ISubscriberRepository'],
     },
     {
       provide: ProcessApprovedPaymentUseCase,
-      useFactory: (subscriperRepo: ISubscriberRepository, notification: TelegramNotificationService) => 
-        new ProcessApprovedPaymentUseCase(subscriperRepo, notification),
+      useFactory: (
+        subscriperRepo: ISubscriberRepository,
+        notification: TelegramNotificationService,
+      ) => new ProcessApprovedPaymentUseCase(subscriperRepo, notification),
+      inject: ['ISubscriberRepository', 'INotificationService'],
+    },
+    {
+      provide: CancelSubscriptionUseCase,
+      useFactory: (
+        subscriperRepo: ISubscriberRepository,
+        notification: TelegramNotificationService,
+      ) => new CancelSubscriptionUseCase(subscriperRepo, notification),
       inject: ['ISubscriberRepository', 'INotificationService'],
     },
 
     // --- ENTRADAS (Portas de Entrada / Gatilhos) ---
     TelegramBotUpdate, // Responde ao /start
-    VacancyConsumer,      // Responde ao RabbitMQ
+    VacancyConsumer, // Responde ao RabbitMQ
   ],
-  controllers: [
-    WebhookController,
-  ]
+  controllers: [WebhookController],
 })
-export class AppModule { }
+export class AppModule {}

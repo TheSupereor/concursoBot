@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/processApprovedPaymentUseCase';
 import { Request, Response } from 'express';
+import { CancelSubscriptionUseCase } from '../../application/use-cases/cancelSubscription';
 
 @Controller('webhooks')
 export class WebhookController {
@@ -20,6 +21,7 @@ export class WebhookController {
 
   constructor(
     private readonly processPaymentUseCase: ProcessApprovedPaymentUseCase,
+    private readonly cancelSubscriptionUseCase: CancelSubscriptionUseCase,
   ) {}
 
   @Post('stripe')
@@ -50,6 +52,18 @@ export class WebhookController {
       if (telegramId) {
         await this.processPaymentUseCase.execute(telegramId);
         console.log(`✅ Pagamento processado para: ${telegramId}`);
+      }
+    }
+
+    // CENÁRIO 2: O CAMINHO TRISTE (ASSINATURA CANCELADA / VENCIDA)
+    if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object;
+
+      // Resgatamos aquele ID que plantamos no metadata!
+      const telegramId = subscription.metadata.telegramId;
+
+      if (telegramId) {
+        await this.cancelSubscriptionUseCase.execute(telegramId);
       }
     }
 

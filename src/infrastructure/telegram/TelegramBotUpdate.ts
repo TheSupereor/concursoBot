@@ -1,3 +1,4 @@
+import Stripe from 'stripe';
 import { Action, Command, Ctx, Start, Update } from 'nestjs-telegraf';
 import { SignUpSubscriberUseCase } from '../../application/use-cases/SignUpSubscriberUseCase';
 import { Context, Markup } from 'telegraf';
@@ -7,6 +8,10 @@ import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository'
 
 @Update()
 export class TelegramBotUpdate {
+  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2026-04-22.dahlia',
+  });
+
   constructor(
     private readonly signUpSubscriberUseCase: SignUpSubscriberUseCase,
     private readonly addPreferenceUseCase: AddPreferenceUseCase,
@@ -153,7 +158,7 @@ export class TelegramBotUpdate {
         line_items: [
           {
             // Você cria esse "Price ID" lá no painel do Stripe (ex: R$ 49,90/mês)
-            price: process.env.STRIPE_PRICE_ID, 
+            price: process.env.STRIPE_PRICE_ID,
             quantity: 1,
           },
         ],
@@ -161,17 +166,22 @@ export class TelegramBotUpdate {
         client_reference_id: telegramId,
         success_url: 'https://seusite.com/sucesso', // Uma página simples de "Obrigado"
         cancel_url: 'https://seusite.com/cancelado',
+        metadata: {
+          telegramId: telegramId, // O Stripe vai grudar essa informação na assinatura para sempre
+        },
       });
 
       await ctx.reply(
         `💳 *Ative seu Radar Premium!*\n\n` +
-        `Para começar a receber as notificações em tempo real, conclua sua assinatura no link seguro abaixo:\n\n` +
-        `👉 [Clique aqui para assinar](${session.url})`,
-        { parse_mode: 'Markdown' }
+          `Para começar a receber as notificações em tempo real, conclua sua assinatura no link seguro abaixo:\n\n` +
+          `👉 [Clique aqui para assinar](${session.url})`,
+        { parse_mode: 'Markdown' },
       );
     } catch (error) {
       console.error('Erro ao gerar link do Stripe:', error);
-      await ctx.reply('Ops, não consegui gerar seu link de pagamento agora. Tente novamente mais tarde.');
+      await ctx.reply(
+        'Ops, não consegui gerar seu link de pagamento agora. Tente novamente mais tarde.',
+      );
     }
   }
 }
