@@ -6,7 +6,9 @@ import { Logger } from '@nestjs/common';
 async function bootstrap() {
   const logger = new Logger('Main');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // <-- ADICIONE ISSO AQUI
+  });
 
   // Conecta o "Motor" de Microserviços (RabbitMQ) à aplicação
   app.connectMicroservice<MicroserviceOptions>({
@@ -17,11 +19,11 @@ async function bootstrap() {
       queueOptions: {
         durable: true,
       },
-      // FUNDAMENTAL: false significa que nós vamos confirmar manualmente (ack) 
+      // FUNDAMENTAL: false significa que nós vamos confirmar manualmente (ack)
       // lá no VacancyConsumer apenas depois de processar a regra de negócio.
-      noAck: false, 
+      noAck: false,
       // Controla a vazão: pega apenas 10 mensagens por vez para não estourar a API do Telegram
-      prefetchCount: 10, 
+      prefetchCount: 10,
     },
   });
 
