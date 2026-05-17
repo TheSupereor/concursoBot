@@ -5,6 +5,8 @@ import { Context, Markup } from 'telegraf';
 import { AddPreferenceUseCase } from '../../application/use-cases/addPreferenceUseCase';
 import { RemovePreferenceUseCase } from '../../application/use-cases/removePreferenceUseCase';
 import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { DefineSalaryUseCase } from '../../application/use-cases/DefineSalaryUseCase';
+import { Logger } from '@nestjs/common';
 
 @Update()
 export class TelegramBotUpdate {
@@ -17,6 +19,7 @@ export class TelegramBotUpdate {
     private readonly addPreferenceUseCase: AddPreferenceUseCase,
     private readonly subscriberRepository: ISubscriberRepository,
     private readonly removePreferenceUseCase: RemovePreferenceUseCase,
+    private readonly defineSalaryUseCase: DefineSalaryUseCase,
   ) {}
 
   @Start()
@@ -182,6 +185,58 @@ export class TelegramBotUpdate {
       await ctx.reply(
         'Ops, não consegui gerar seu link de pagamento agora. Tente novamente mais tarde.',
       );
+    }
+  }
+
+  @Command('salario')
+  async onSalary(@Ctx() ctx: Context) {
+    const teclado = Markup.inlineKeyboard([
+      [
+        Markup.button.callback('Qualquer Valor', 'set_salario_0'),
+        Markup.button.callback('R$ 3.000+', 'set_salario_3000'),
+      ],
+      [
+        Markup.button.callback('R$ 5.000+', 'set_salario_5000'),
+        Markup.button.callback('R$ 10.000+', 'set_salario_10000'),
+      ],
+      [
+        Markup.button.callback(
+          'R$ 15.000+ (Alto Escalão)',
+          'set_salario_15000',
+        ),
+      ],
+    ]);
+
+    await ctx.reply(
+      '💸 *Filtro de Salário*\n\nSelecione o piso salarial desejado. Só enviaremos vagas que paguem acima deste valor:',
+      { reply_markup: teclado.reply_markup, parse_mode: 'Markdown' },
+    );
+  }
+
+  // 2. A Action que captura o clique
+  @Action(/set_salario_(\d+)/)
+  async onSalaryDefine(@Ctx() ctx: Context & { match: RegExpExecArray }) {
+    const telegramId = ctx.from.id.toString();
+    const valorEscolhido = parseInt(ctx.match[1], 10); // Extrai o número do callback
+
+    try {
+      await this.defineSalaryUseCase.execute(telegramId, valorEscolhido);
+
+      const textoSalario =
+        valorEscolhido === 0
+          ? 'Qualquer valor'
+          : `Acima de R$ ${valorEscolhido},00`;
+
+      await ctx.answerCbQuery('Salário atualizado!');
+      await ctx.editMessageText(
+        `✅ Feito! Seu radar agora só buscará vagas com salário: **${textoSalario}**`,
+        { parse_mode: 'Markdown' },
+      );
+    } catch (error) {
+      Logger.error(error);
+      await ctx.answerCbQuery('Erro ao atualizar salário.', {
+        show_alert: true,
+      });
     }
   }
 }

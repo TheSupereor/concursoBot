@@ -18,6 +18,8 @@ async function bootstrap() {
       queue: process.env.RABBITMQ_QUEUE || 'concursos.new',
       queueOptions: {
         durable: true,
+        deadLetterExchange: '',
+        deadLetterRoutingKey: 'concursos.dlq', // Para onde vão as mensagens mortas
       },
       // FUNDAMENTAL: false significa que nós vamos confirmar manualmente (ack)
       // lá no VacancyConsumer apenas depois de processar a regra de negócio.
@@ -27,9 +29,22 @@ async function bootstrap() {
     },
   });
 
+  // DLQ
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672'],
+      queue: 'concursos.dlq',
+      queueOptions: {
+        durable: true, // Queremos que as mensagens mortas sobrevivam se o RabbitMQ for reiniciado
+      },
+      noAck: false,
+    },
+  });
+
   // Iniciar o escutador do RabbitMQ
   await app.startAllMicroservices();
-  logger.log('Microserviço RabbitMQ conectado e escutando filas.');
+  logger.log('Microserviço RabbitMQ, Main e DLQ, conectado e escutando filas.');
 
   // Inicia o servidor HTTP (na porta 3000 ou a que estiver no .env)
   // Isso será usado no futuro para escutar os webhooks do Stripe/Asaas

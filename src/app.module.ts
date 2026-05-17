@@ -26,6 +26,7 @@ import { CancelSubscriptionUseCase } from './application/use-cases/cancelSubscri
 
 // --- Controllers ---
 import { WebhookController } from './infrastructure/http/WebhookController';
+import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase';
 
 @Module({
   imports: [
@@ -124,6 +125,12 @@ import { WebhookController } from './infrastructure/http/WebhookController';
         notification: TelegramNotificationService,
       ) => new CancelSubscriptionUseCase(subscriperRepo, notification),
       inject: ['ISubscriberRepository', 'INotificationService'],
+    },
+    {
+      provide: DefineSalaryUseCase,
+      useFactory: (subscriperRepo: ISubscriberRepository) =>
+        new DefineSalaryUseCase(subscriperRepo),
+      inject: ['ISubscriberRepository'],
     },
 
     // --- ENTRADAS (Portas de Entrada / Gatilhos) ---
