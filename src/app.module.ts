@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TelegrafModule } from 'nestjs-telegraf';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 // --- Entidades de Infraestrutura (ORM) ---
 import { SubscriberOrmEntity } from './domain/entities/SubscriberOrmEntity';
@@ -27,10 +29,12 @@ import { CancelSubscriptionUseCase } from './application/use-cases/cancelSubscri
 // --- Controllers ---
 import { WebhookController } from './infrastructure/http/WebhookController';
 import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase';
+import { PciConcursosScrapper } from './infrastructure/scrapper/pciConcursosScrapper';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -42,8 +46,12 @@ import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase
         username: config.get<string>('DB_USERNAME'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_DATABASE'),
-        entities: [SubscriberOrmEntity, PreferenceOrmEntity],
-        synchronize: true, // Em produção, use migrations!
+        entities: [
+          SubscriberOrmEntity,
+          PreferenceOrmEntity,
+          NotificationLogOrmEntity,
+        ],
+        synchronize: true,
       }),
     }),
     TypeOrmModule.forFeature([
@@ -52,7 +60,6 @@ import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase
       NotificationLogOrmEntity,
     ]),
 
-    // Conexão com o Bot do Telegram
     TelegrafModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -60,6 +67,20 @@ import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase
         token: config.get<string>('TELEGRAM_BOT_TOKEN'),
       }),
     }),
+
+    ClientsModule.register([
+      {
+        name: 'RABBITMQ_CLIENT',
+        transport: Transport.RMQ,
+        options: {
+          urls: [
+            process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
+          ],
+          queue: process.env.RABBITMQ_QUEUE || 'concursos.new',
+          queueOptions: { durable: true },
+        },
+      },
+    ]),
   ],
   providers: [
     // --- ADAPTADORES (Portas de Saída) ---
@@ -134,8 +155,9 @@ import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase
     },
 
     // --- ENTRADAS (Portas de Entrada / Gatilhos) ---
-    TelegramBotUpdate, // Responde ao /start
-    VacancyConsumer, // Responde ao RabbitMQ
+    TelegramBotUpdate,
+    VacancyConsumer,
+    PciConcursosScrapper,
   ],
   controllers: [WebhookController],
 })

@@ -171,13 +171,17 @@ Pagamento aprovado
 
 1. Ler este arquivo antes de qualquer implementação.
 
-2. Consultar .ai/architecture/ para detalhes arquiteturais.
+2. Consultar .ai/architecture/ para detalhes arquiteturais e .ai/decisions/ para entender o *porquê* das decisões.
 
-3. Seguir skills reutilizáveis em .ai/skills/.
+3. Consultar .ai/domain/glossary.md para entender os termos do negócio antes de nomear variáveis ou métodos.
 
-4. Atualizar .ai/progress/current.md após mudanças significativas.
+4. Verificar .ai/standards/anti-patterns.md antes de implementar — os erros mais comuns já estão documentados.
 
-5. Executar avaliações em .ai/evaluations/ antes de marcar uma tarefa como concluída.
+5. Seguir skills reutilizáveis em .ai/skills/ (create-use-case, create-consumer, create-telegram-command, create-notification-channel).
+
+6. Atualizar .ai/progress/current.md após mudanças significativas.
+
+7. Executar avaliações em .ai/evaluations/ antes de marcar uma tarefa como concluída.
 
 ### Exemplo de Uso Esperado
 

@@ -11,23 +11,26 @@
 - **Filtro de salário** — definição de salário mínimo global por preferências
 - **Domain** — entidades Subscriber, Vacancy, Value Objects Salary e Preference
 
-## Incompleto / TODOs identificados no código
+## Resolvido recentemente
 
-- `MysqlSubscriberRepository.save()` — stub, não persiste dados
-- `MysqlSubscriberRepository.searchByTelegramId()` — retorna null sempre
-- `CancelSubscriptionUseCase` — notificação ao usuário pendente
-- `pciConcursosScrapper.ts` — scraping implementado, mas publicação na fila não funciona (só loga)
-- Scraper não implementa deduplicação por hash
+- `MysqlSubscriberRepository.save()` — implementado com cascade + orphanedRowAction: 'delete'
+- `MysqlSubscriberRepository.searchByTelegramId()` — implementado
+- `CancelSubscriptionUseCase` — notificação ao usuário adicionada via sendCustomAlert
+- `pciConcursosScrapper.ts` — publica na fila via ClientProxy; deduplicação por hash em memória
+- `VacancyConsumer` — campo names padronizados para inglês (job, region, salary)
+- `SubscriberOrmEntity` — orphanedRowAction: 'delete' adicionado para remover preferências órfãs
+- Seleção de região no bot — fluxo de dois passos: área → região → confirmação
+- `NotifySubscriberUseCase.spec.ts` — atualizado com mock de INotificationLogRepository e teste de idempotência
 
-## Em andamento
+## Incompleto / TODOs
 
-(atualizar conforme trabalho progride)
+- Desabilitar `synchronize: true` e criar migrations TypeORM para produção (ADR 002)
+- `test/app.e2e-spec.ts` — erro de importação do supertest (pré-existente, não crítico)
 
 ## Próximos passos sugeridos
 
-1. Implementar `MysqlSubscriberRepository.save()` e `searchByTelegramId()`
-2. Implementar publicação na fila dentro do scraper
-3. Adicionar deduplicação de vagas no scraper (hash de título+cargo)
-4. Adicionar notificação no cancelamento de assinatura
-5. Desabilitar `synchronize: true` e criar migrations TypeORM para produção
-6. Expandir cobertura de testes (atualmente: Subscriber.spec, Salary.spec, NotifySubscriberUseCase.spec)
+1. Desabilitar `synchronize: true` antes do primeiro deploy em produção
+2. Comando `/status` — mostrar estado atual da assinatura e preferências
+3. Múltiplas fontes de scraping
+4. Health check endpoint (`GET /health`)
+5. DLQ com alerta ativo para o administrador

@@ -24,9 +24,10 @@ import { SubscriberOrmEntity } from '../../domain/entities/SubscriberOrmEntity';
     {
       provide: NotifySubscriberUseCase,
       useFactory: (repo: MysqlSubscriberRepository, notificador: TelegramNotificationService) => {
-        return new NotifySubscriberUseCase(repo, notificador);
+        const noopLog = { alreadySent: async () => false, registerSent: async () => {} };
+        return new NotifySubscriberUseCase(repo, notificador, noopLog);
       },
-      inject: ['IAssinanteRepository', 'INotificacaoService'], // Pega os itens 1 e 2
+      inject: ['IAssinanteRepository', 'INotificacaoService'],
     }
   ],
   exports: [NotifySubscriberUseCase] // Expõe o caso de uso para ser chamado pelo Controller/Worker

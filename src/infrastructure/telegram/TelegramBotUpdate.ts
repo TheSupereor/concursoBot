@@ -65,32 +65,60 @@ export class TelegramBotUpdate {
     );
   }
 
-  // O Action que ESCUTA o clique nos botões
-  // Usamos uma Expressão Regular (Regex) para pegar qualquer botão que comece com 'add_area_'
   @Action(/add_area_(.+)/)
   async onSelectedArea(@Ctx() ctx: Context & { match: RegExpExecArray }) {
-    const telegramId = ctx.from.id.toString();
-
-    // O match[1] captura exatamente o que vem depois do 'add_area_' (ex: TI, SAUDE)
     const selectedArea = ctx.match[1];
 
+    await ctx.answerCbQuery();
+
+    const regionKeyboard = Markup.inlineKeyboard([
+      [
+        Markup.button.callback('🇧🇷 Nacional', `pick_region:${selectedArea}:BR`),
+        Markup.button.callback('SP', `pick_region:${selectedArea}:SP`),
+      ],
+      [
+        Markup.button.callback('RJ', `pick_region:${selectedArea}:RJ`),
+        Markup.button.callback('MG', `pick_region:${selectedArea}:MG`),
+      ],
+      [
+        Markup.button.callback('RS', `pick_region:${selectedArea}:RS`),
+        Markup.button.callback('PR', `pick_region:${selectedArea}:PR`),
+      ],
+      [
+        Markup.button.callback('BA', `pick_region:${selectedArea}:BA`),
+        Markup.button.callback('DF', `pick_region:${selectedArea}:DF`),
+      ],
+      [
+        Markup.button.callback('CE', `pick_region:${selectedArea}:CE`),
+        Markup.button.callback('GO', `pick_region:${selectedArea}:GO`),
+      ],
+    ]);
+
+    await ctx.reply(
+      `Área *${selectedArea}* selecionada. Agora escolha a região:`,
+      { parse_mode: 'Markdown', ...regionKeyboard },
+    );
+  }
+
+  @Action(/pick_region:([^:]+):(.+)/)
+  async onRegionSelected(@Ctx() ctx: Context & { match: RegExpExecArray }) {
+    const telegramId = ctx.from.id.toString();
+    const area = ctx.match[1];
+    const region = ctx.match[2];
+
     try {
-      // Executa a regra de negócio
-      await this.addPreferenceUseCase.execute(telegramId, selectedArea);
+      await this.addPreferenceUseCase.execute(telegramId, area, region);
 
-      // O Telegram exige que respondamos a chamada do botão (answerCbQuery)
-      // para que o ícone de "carregando" no botão do usuário desapareça
-      await ctx.answerCbQuery(`Área ${selectedArea} adicionada!`);
-
-      // Avisamos no chat que deu certo
-      await ctx.reply(
-        `Feito! Adicionei a área **${selectedArea}** no seu radar.\n\nSempre que um edital dessa área sair, eu te aviso aqui.`,
+      const regionLabel = region === 'BR' ? 'Nacional' : region;
+      await ctx.answerCbQuery('Preferência adicionada!');
+      await ctx.editMessageText(
+        `✅ Adicionado: *${area}* — *${regionLabel}*\n\nSempre que um edital dessa área e região aparecer, eu te aviso.`,
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
       console.error(error);
       await ctx.answerCbQuery(
-        'Erro ao adicionar preferência. Verifique se você não atingiu o limite.',
+        error instanceof Error ? error.message : 'Erro ao adicionar preferência.',
         { show_alert: true },
       );
     }

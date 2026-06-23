@@ -21,10 +21,10 @@ export class VacancyConsumer {
       try {
         const novaVaga = new Vacancy(
           data.id,
-          data.cargo,
+          data.job,
           data.area,
-          data.regiao,
-          new Salary(data.salario),
+          data.region,
+          new Salary(data.salary),
         );
 
         // Tenta rodar o Caso de Uso

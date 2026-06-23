@@ -11,6 +11,9 @@ export class SubscriberOrmEntity {
 
   // Relacionamento: Um assinante pode ter MUITAS preferências
   // O 'cascade: true' significa que se salvarmos o assinante, as preferências salvam junto
-  @OneToMany(() => PreferenceOrmEntity, (pref) => pref.subscriber, { cascade: true })
+  @OneToMany(() => PreferenceOrmEntity, (pref) => pref.subscriber, {
+    cascade: true,
+    orphanedRowAction: 'delete',
+  })
   preferences: PreferenceOrmEntity[];
 }
