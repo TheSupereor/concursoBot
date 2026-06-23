@@ -6,6 +6,7 @@ import { AddPreferenceUseCase } from '../../application/use-cases/addPreferenceU
 import { RemovePreferenceUseCase } from '../../application/use-cases/removePreferenceUseCase';
 import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
 import { DefineSalaryUseCase } from '../../application/use-cases/DefineSalaryUseCase';
+import { GetSubscriberStatusUseCase } from '../../application/use-cases/GetSubscriberStatusUseCase';
 import { Logger } from '@nestjs/common';
 
 @Update()
@@ -20,6 +21,7 @@ export class TelegramBotUpdate {
     private readonly subscriberRepository: ISubscriberRepository,
     private readonly removePreferenceUseCase: RemovePreferenceUseCase,
     private readonly defineSalaryUseCase: DefineSalaryUseCase,
+    private readonly getSubscriberStatusUseCase: GetSubscriberStatusUseCase,
   ) {}
 
   @Start()
@@ -40,6 +42,52 @@ export class TelegramBotUpdate {
       await ctx.reply(
         'Ops, tive um problema interno. Tente novamente em alguns minutos.',
       );
+    }
+  }
+
+  @Command('status')
+  async onStatus(@Ctx() ctx: Context) {
+    const telegramId = ctx.from.id.toString();
+
+    try {
+      const status = await this.getSubscriberStatusUseCase.execute(telegramId);
+
+      if (!status.exists) {
+        await ctx.reply('Você ainda não está cadastrado. Use /start para começar.');
+        return;
+      }
+
+      const assinaturaLabel = status.isActive ? '✅ Ativa' : '❌ Inativa';
+      const areaEmoji: Record<string, string> = {
+        TI: '💻', SAUDE: '🏥', EDUCACAO: '📚', TRIBUNAIS: '⚖️', POLICIAL: '🚔',
+      };
+
+      let prefsText: string;
+      if (status.preferences.length === 0) {
+        prefsText = '_Nenhuma área cadastrada_';
+      } else {
+        prefsText = status.preferences.map((pref) => {
+          const emoji = areaEmoji[pref.area] ?? '📌';
+          const regionLabel = pref.region === 'BR' ? 'Nacional' : pref.region;
+          const salaryLabel = pref.minimumSalary === 0
+            ? 'qualquer salário'
+            : `R$ ${pref.minimumSalary.toLocaleString('pt-BR')}+`;
+          return `  ${emoji} *${pref.area}* — ${regionLabel} (${salaryLabel})`;
+        }).join('\n');
+      }
+
+      const totalPrefs = status.preferences.length;
+      const message =
+        `📊 *Seu Radar de Concursos*\n\n` +
+        `Assinatura: ${assinaturaLabel}\n` +
+        `Áreas monitoradas: *${totalPrefs}/5*\n\n` +
+        `${prefsText}\n\n` +
+        `Use /areas para adicionar · /minhas\\_areas para remover · /salario para filtrar`;
+
+      await ctx.reply(message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Erro ao buscar status', error);
+      await ctx.reply('Não consegui carregar seu status agora. Tente novamente.');
     }
   }
 

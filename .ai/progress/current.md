@@ -11,7 +11,7 @@
 - **Filtro de salário** — definição de salário mínimo global por preferências
 - **Domain** — entidades Subscriber, Vacancy, Value Objects Salary e Preference
 
-## Resolvido recentemente
+## Resolvido recentemente (sessão atual)
 
 - `MysqlSubscriberRepository.save()` — implementado com cascade + orphanedRowAction: 'delete'
 - `MysqlSubscriberRepository.searchByTelegramId()` — implementado
@@ -22,6 +22,11 @@
 - Seleção de região no bot — fluxo de dois passos: área → região → confirmação
 - `NotifySubscriberUseCase.spec.ts` — atualizado com mock de INotificationLogRepository e teste de idempotência
 
+- Comando `/status` — exibe assinatura, áreas e salários do usuário
+- `DlqMonitorService` — cron a cada 5min que alerta admin no Telegram quando DLQ tem mensagens
+- `GetSubscriberStatusUseCase` — retorna DTO estruturado com status do subscriber
+- `.env.example` — documentadas as variáveis `RABBITMQ_MANAGEMENT_URL`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `ADMIN_TELEGRAM_ID`
+
 ## Incompleto / TODOs
 
 - Desabilitar `synchronize: true` e criar migrations TypeORM para produção (ADR 002)
@@ -30,7 +35,7 @@
 ## Próximos passos sugeridos
 
 1. Desabilitar `synchronize: true` antes do primeiro deploy em produção
-2. Comando `/status` — mostrar estado atual da assinatura e preferências
-3. Múltiplas fontes de scraping
-4. Health check endpoint (`GET /health`)
-5. DLQ com alerta ativo para o administrador
+2. Múltiplas fontes de scraping
+3. Health check endpoint (`GET /health`)
+4. Modo pausa de notificações (`/pausar`)
+5. Resumo diário (digest) em vez de alerta imediato por vaga

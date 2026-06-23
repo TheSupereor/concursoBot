@@ -29,7 +29,9 @@ import { CancelSubscriptionUseCase } from './application/use-cases/cancelSubscri
 // --- Controllers ---
 import { WebhookController } from './infrastructure/http/WebhookController';
 import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase';
+import { GetSubscriberStatusUseCase } from './application/use-cases/GetSubscriberStatusUseCase';
 import { PciConcursosScrapper } from './infrastructure/scrapper/pciConcursosScrapper';
+import { DlqMonitorService } from './infrastructure/monitoring/DlqMonitorService';
 
 @Module({
   imports: [
@@ -153,11 +155,18 @@ import { PciConcursosScrapper } from './infrastructure/scrapper/pciConcursosScra
         new DefineSalaryUseCase(subscriperRepo),
       inject: ['ISubscriberRepository'],
     },
+    {
+      provide: GetSubscriberStatusUseCase,
+      useFactory: (subscriperRepo: ISubscriberRepository) =>
+        new GetSubscriberStatusUseCase(subscriperRepo),
+      inject: ['ISubscriberRepository'],
+    },
 
     // --- ENTRADAS (Portas de Entrada / Gatilhos) ---
     TelegramBotUpdate,
     VacancyConsumer,
     PciConcursosScrapper,
+    DlqMonitorService,
   ],
   controllers: [WebhookController],
 })
