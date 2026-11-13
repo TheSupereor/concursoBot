@@ -1,11 +1,14 @@
-version: '3.8'
+# Local development stack.
+#   docker compose up --build        -> MySQL + RabbitMQ + Adminer + the app
+#   docker compose up mysql rabbitmq -> only the dependencies (run the app with `npm run start:dev`)
+# The app needs real Telegram/Stripe values in .env (copy .env.example). Dev credentials below are
+# for local use only and must never be reused elsewhere.
 
 services:
-  # Banco de Dados Relacional
   mysql:
     image: mysql:8.0
     container_name: concursos-mysql
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: concursos_db
       MYSQL_ROOT_PASSWORD: root_password
@@ -15,27 +18,68 @@ services:
       - '3306:3306'
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-uroot',
+          '-proot_password',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
-  # Interface para visualizar o banco de dados (Acesse: http://localhost:8080)
   adminer:
     image: adminer
     container_name: concursos-adminer
-    restart: always
+    restart: unless-stopped
     ports:
       - '8080:8080'
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
-  # Mensageria (Acesse o painel: http://localhost:15672 | Login: guest / guest)
   rabbitmq:
     image: rabbitmq:3-management
     container_name: concursos-rabbitmq
-    restart: always
+    restart: unless-stopped
     ports:
-      - '5672:5672'   # Porta de comunicação do RabbitMQ
-      - '15672:15672' # Porta do painel de controle (Management Plugin)
+      - '5672:5672' # AMQP
+      - '15672:15672' # Management UI (guest / guest)
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      target: runtime
+    container_name: concursos-app
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false # lets `docker compose up mysql rabbitmq` work before .env exists
+    environment:
+      # Inside the compose network, services are reached by name, not localhost.
+      DB_HOST: mysql
+      DB_PORT: 3306
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+    ports:
+      - '3000:3000'
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   mysql_data:
