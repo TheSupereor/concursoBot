@@ -7,7 +7,7 @@ import { RemovePreferenceUseCase } from '../../application/use-cases/removePrefe
 import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
 import { DefineSalaryUseCase } from '../../application/use-cases/DefineSalaryUseCase';
 import { GetSubscriberStatusUseCase } from '../../application/use-cases/GetSubscriberStatusUseCase';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 
 @Update()
 export class TelegramBotUpdate {
@@ -18,6 +18,7 @@ export class TelegramBotUpdate {
   constructor(
     private readonly signUpSubscriberUseCase: SignUpSubscriberUseCase,
     private readonly addPreferenceUseCase: AddPreferenceUseCase,
+    @Inject('ISubscriberRepository')
     private readonly subscriberRepository: ISubscriberRepository,
     private readonly removePreferenceUseCase: RemovePreferenceUseCase,
     private readonly defineSalaryUseCase: DefineSalaryUseCase,
