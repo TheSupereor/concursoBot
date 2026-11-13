@@ -6,7 +6,7 @@ export class SubscriberOrmEntity {
   @PrimaryColumn() // Usamos PrimaryColumn porque o telegramId já é único e vem de fora
   telegramId: string;
 
-  @Column({ default: true }) // No MySQL vira um campo BOOLEAN (TINYINT)
+  @Column({ default: false }) // No MySQL vira um campo BOOLEAN (TINYINT)
   isActive: boolean;
 
   // Relacionamento: Um assinante pode ter MUITAS preferências
