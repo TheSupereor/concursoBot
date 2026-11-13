@@ -59,3 +59,19 @@ jobs:
       - uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docs-check:
+    name: README or docs updated
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-docs')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require docs changes when source changes
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          if echo "$changed" | grep -q '^src/' && ! echo "$changed" | grep -Eq '^(README\.md|CHANGELOG\.md|docs/)'; then
+            echo "::error::src/ changed but README.md, CHANGELOG.md or docs/ did not. Update the progress board/docs, or add the 'no-docs' label for purely internal changes."
+            exit 1
+          fi
