@@ -1,17 +1,23 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Unique,
+} from 'typeorm';
 
 @Entity('notification_logs')
 @Unique('UQ_telegramId_vagaId', ['telegramId', 'vagaId'])
 export class NotificationLogOrmEntity {
-	@PrimaryGeneratedColumn()
-	id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-	@Column()
-	telegramId: string;
+  @Column()
+  telegramId: string;
 
-	@Column()
-	vacancyId: string;
+  @Column()
+  vacancyId: string;
 
-	@CreateDateColumn()
-	sentDate: Date;
+  @CreateDateColumn()
+  sentDate: Date;
 }

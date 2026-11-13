@@ -1,11 +1,12 @@
-import { ISubscriberRepository } from "../../domain/ports/ISubscriberRepository";
+import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
 
 export class RemovePreferenceUseCase {
   constructor(private readonly subscriberRepository: ISubscriberRepository) {}
 
   async execute(telegramId: string, area: string): Promise<void> {
-    const subscriber = await this.subscriberRepository.searchByTelegramId(telegramId);
-    
+    const subscriber =
+      await this.subscriberRepository.searchByTelegramId(telegramId);
+
     if (!subscriber) {
       throw new Error('Assinante não encontrado.');
     }

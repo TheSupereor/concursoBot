@@ -10,7 +10,6 @@ import { PreferenceOrmEntity } from '../../../domain/entities/PreferenceOrmEntit
 
 @Injectable()
 export class MysqlSubscriberRepository implements ISubscriberRepository {
-
   constructor(
     @InjectRepository(SubscriberOrmEntity)
     private readonly ormRepository: Repository<SubscriberOrmEntity>,

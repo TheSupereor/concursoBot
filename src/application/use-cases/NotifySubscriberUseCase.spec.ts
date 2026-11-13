@@ -1,12 +1,11 @@
-import { Subscriber } from "../../domain/entities/Subscriber";
-import { Vacancy } from "../../domain/entities/Vacancy";
-import { ISubscriberRepository } from "../../domain/ports/ISubscriberRepository";
-import { INotificationService } from "../../domain/ports/INotificationService";
-import { INotificationLogRepository } from "../../domain/ports/INotificationLogRepository";
-import { Preference } from "../../domain/value-objects/Preference";
-import { Salary } from "../../domain/value-objects/Salary";
-import { NotifySubscriberUseCase } from "./NotifySubscriberUseCase";
-
+import { Subscriber } from '../../domain/entities/Subscriber';
+import { Vacancy } from '../../domain/entities/Vacancy';
+import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { INotificationService } from '../../domain/ports/INotificationService';
+import { INotificationLogRepository } from '../../domain/ports/INotificationLogRepository';
+import { Preference } from '../../domain/value-objects/Preference';
+import { Salary } from '../../domain/value-objects/Salary';
+import { NotifySubscriberUseCase } from './NotifySubscriberUseCase';
 
 describe('Use Case: NotificarAssinantes', () => {
   let useCase: NotifySubscriberUseCase;
@@ -43,17 +42,34 @@ describe('Use Case: NotificarAssinantes', () => {
     assinanteDeTI.addPreference(new Preference('TI', 'SP', new Salary(5000)));
 
     const assinanteDeDireito = new Subscriber('telegram-2', true);
-    assinanteDeDireito.addPreference(new Preference('Direito', 'SP', new Salary(5000)));
+    assinanteDeDireito.addPreference(
+      new Preference('Direito', 'SP', new Salary(5000)),
+    );
 
-    mockAssinanteRepo.searchActiveSubscribers.mockResolvedValue([assinanteDeTI, assinanteDeDireito]);
+    mockAssinanteRepo.searchActiveSubscribers.mockResolvedValue([
+      assinanteDeTI,
+      assinanteDeDireito,
+    ]);
 
-    const vagaNovaTI = new Vacancy('vaga-123', 'Desenvolvedor', 'TI', 'SP', new Salary(8000));
+    const vagaNovaTI = new Vacancy(
+      'vaga-123',
+      'Desenvolvedor',
+      'TI',
+      'SP',
+      new Salary(8000),
+    );
 
     await useCase.execute(vagaNovaTI);
 
     expect(mockAssinanteRepo.searchActiveSubscribers).toHaveBeenCalledTimes(1);
-    expect(mockNotificacaoService.sendVacancyAlert).toHaveBeenCalledWith(assinanteDeTI, vagaNovaTI);
-    expect(mockNotificacaoService.sendVacancyAlert).not.toHaveBeenCalledWith(assinanteDeDireito, vagaNovaTI);
+    expect(mockNotificacaoService.sendVacancyAlert).toHaveBeenCalledWith(
+      assinanteDeTI,
+      vagaNovaTI,
+    );
+    expect(mockNotificacaoService.sendVacancyAlert).not.toHaveBeenCalledWith(
+      assinanteDeDireito,
+      vagaNovaTI,
+    );
   });
 
   it('não deve notificar se a vaga já foi enviada (idempotência)', async () => {
@@ -63,7 +79,13 @@ describe('Use Case: NotificarAssinantes', () => {
     mockAssinanteRepo.searchActiveSubscribers.mockResolvedValue([subscriber]);
     mockNotificationLog.alreadySent.mockResolvedValue(true);
 
-    const vaga = new Vacancy('vaga-duplicada', 'Dev', 'TI', 'SP', new Salary(5000));
+    const vaga = new Vacancy(
+      'vaga-duplicada',
+      'Dev',
+      'TI',
+      'SP',
+      new Salary(5000),
+    );
 
     await useCase.execute(vaga);
 

@@ -1,12 +1,17 @@
-import { ISubscriberRepository } from "../../domain/ports/ISubscriberRepository";
-import { Preference } from "../../domain/value-objects/Preference";
-import { Salary } from "../../domain/value-objects/Salary";
+import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { Preference } from '../../domain/value-objects/Preference';
+import { Salary } from '../../domain/value-objects/Salary';
 
 export class AddPreferenceUseCase {
   constructor(private readonly subscriberRepository: ISubscriberRepository) {}
 
-  async execute(telegramId: string, area: string, region: string = 'BR'): Promise<void> {
-    const subscriber = await this.subscriberRepository.searchByTelegramId(telegramId);
+  async execute(
+    telegramId: string,
+    area: string,
+    region: string = 'BR',
+  ): Promise<void> {
+    const subscriber =
+      await this.subscriberRepository.searchByTelegramId(telegramId);
     if (!subscriber) {
       throw new Error('Assinante não encontrado. Digite /start primeiro.');
     }
