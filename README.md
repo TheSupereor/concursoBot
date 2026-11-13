@@ -1,100 +1,104 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Radar de Concursos
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+[![CI](https://github.com/TheSupereor/alertas-concursos-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/TheSupereor/alertas-concursos-bot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-work_in_progress-orange)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+A Telegram bot that watches Brazilian public-sector job postings ("concursos"), filters them by each
+subscriber's preferences (area, region, minimum salary) and sends real-time alerts to paying subscribers.
 
-## Description
+> **Status: work in progress. Not ready for real users.** The project is being hardened in public,
+> phase by phase. See the [progress board](#progress-board) for what works today and what does not.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## How it works
 
-## Project setup
-
-```bash
-$ npm install
+```
+ Scraper (cron) ──▶ RabbitMQ ──▶ Consumer ──▶ Matching ──▶ Telegram alerts
+                      │  (retry + DLQ)              ▲
+ Stripe webhooks ─────┴──▶ Subscriptions ───────────┘
+ Telegram commands ──────▶ Preferences / billing
 ```
 
-## Compile and run the project
+- **Scraper** collects postings and publishes them to a queue.
+- **Consumer** matches each posting against active subscribers and notifies them, idempotently.
+- **Stripe** activates and cancels subscriptions through signed webhooks.
+- **Bot commands:** `/start`, `/areas`, `/minhas_areas`, `/salario`, `/assinar`, `/status`.
+
+## Tech stack
+
+NestJS · TypeScript · MySQL (TypeORM) · RabbitMQ · Telegraf · Stripe · Docker · GitHub Actions
+
+Architecture: hexagonal (ports and adapters) with a pure domain layer. Architecture notes and decision
+records live in [`.ai/`](.ai) and will move to `docs/` as they are translated and consolidated.
+
+## Progress board
+
+Legend: ✅ done · 🚧 in progress · 📋 planned
+
+| Phase                            | Status | Scope                                                                |
+| -------------------------------- | ------ | -------------------------------------------------------------------- |
+| 0. Baseline and repo hygiene     | 🚧     | CI, license, commit conventions, Dockerfile, README (this phase)     |
+| 1. Critical fixes                | 📋     | Billing, idempotency and messaging bugs, each with a regression test |
+| 2. Architecture and code quality | 📋     | Pure domain, modules, validated config, strict TypeScript            |
+| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                            |
+| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                |
+| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers            |
+| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure          |
+| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                             |
+| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                             |
+
+### Launch milestones
+
+| Milestone                 | Status | Meaning                                            |
+| ------------------------- | ------ | -------------------------------------------------- |
+| M1: local stack in Docker | 🚧     | `docker compose up` runs the whole system          |
+| M2: closed beta           | 📋     | Friends and testers, Stripe in test mode           |
+| M3: paying customers      | 📋     | Hosted 24/7, Stripe live, privacy requirements met |
+
+### What changed recently
+
+- Docker image and full-stack compose file; GitHub Actions pipeline; Conventional Commits enforced.
+- Declared the missing `amqplib` dependency (the app could not start on a clean install).
+
+## Known limitations
+
+These are known issues in the current code and are scheduled in the phases above:
+
+- **The app does not start yet**: dependency injection of `TelegramBotUpdate` is misconfigured (M1 blocker).
+- New subscribers are created as active, so billing is not enforced yet.
+- Stripe cancellation events may not reach the right user (metadata is set on the checkout session, not the subscription).
+- Notification failures are swallowed, so retries and the dead-letter queue are not triggered for delivery errors.
+- Schema is created with `synchronize: true`; there are no migrations.
+- The scraper reads a single region and its area classifier produces false positives.
+- Test coverage is limited to the domain and one use case.
+
+## Getting started
+
+Requirements: Node.js 22 (`.nvmrc`), Docker.
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+cp .env.example .env            # fill in Telegram and Stripe test values
+docker compose up -d mysql rabbitmq
+npm ci
+npm run start:dev
 ```
 
-## Run tests
+`docker compose up --build` also builds and runs the app container (see the first limitation above).
+
+Useful commands:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run test:ci       # unit tests with coverage
+npm run lint:check
+npm run typecheck
 ```
 
-## Deployment
+RabbitMQ management UI: <http://localhost:15672> (guest / guest, local only) · Adminer: <http://localhost:8080>
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Contributing
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+See [CONTRIBUTING.md](CONTRIBUTING.md). Commits follow Conventional Commits. Security issues: [SECURITY.md](SECURITY.md).
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# alertas-concursos-bot
+[MIT](LICENSE)
