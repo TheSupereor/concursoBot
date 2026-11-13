@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 
 @Entity('notification_logs')
-@Unique('UQ_telegramId_vagaId', ['telegramId', 'vagaId'])
+@Unique('UQ_telegramId_vacancyId', ['telegramId', 'vacancyId'])
 export class NotificationLogOrmEntity {
   @PrimaryGeneratedColumn()
   id: number;
