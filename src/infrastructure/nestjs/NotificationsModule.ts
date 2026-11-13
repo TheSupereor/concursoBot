@@ -7,7 +7,7 @@ import { SubscriberOrmEntity } from '../../domain/entities/SubscriberOrmEntity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SubscriberOrmEntity]) // Conecta a tabela do TypeORM
+    TypeOrmModule.forFeature([SubscriberOrmEntity]), // Conecta a tabela do TypeORM
   ],
   providers: [
     // 1. Registramos o Repositório do MySQL na "vaga" da Interface
@@ -23,13 +23,19 @@ import { SubscriberOrmEntity } from '../../domain/entities/SubscriberOrmEntity';
     // 3. Registramos o nosso Caso de Uso! (O NestJS vai injetar as dependências nele)
     {
       provide: NotifySubscriberUseCase,
-      useFactory: (repo: MysqlSubscriberRepository, notificador: TelegramNotificationService) => {
-        const noopLog = { alreadySent: async () => false, registerSent: async () => {} };
+      useFactory: (
+        repo: MysqlSubscriberRepository,
+        notificador: TelegramNotificationService,
+      ) => {
+        const noopLog = {
+          alreadySent: async () => false,
+          registerSent: async () => {},
+        };
         return new NotifySubscriberUseCase(repo, notificador, noopLog);
       },
       inject: ['IAssinanteRepository', 'INotificacaoService'],
-    }
+    },
   ],
-  exports: [NotifySubscriberUseCase] // Expõe o caso de uso para ser chamado pelo Controller/Worker
+  exports: [NotifySubscriberUseCase], // Expõe o caso de uso para ser chamado pelo Controller/Worker
 })
 export class NotificacoesModule {}

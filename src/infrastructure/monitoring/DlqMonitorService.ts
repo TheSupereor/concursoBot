@@ -9,7 +9,8 @@ export class DlqMonitorService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkDlq() {
-    const managementUrl = process.env.RABBITMQ_MANAGEMENT_URL || 'http://localhost:15672';
+    const managementUrl =
+      process.env.RABBITMQ_MANAGEMENT_URL || 'http://localhost:15672';
     const user = process.env.RABBITMQ_USER || 'guest';
     const password = process.env.RABBITMQ_PASSWORD || 'guest';
     const adminTelegramId = process.env.ADMIN_TELEGRAM_ID;
@@ -33,17 +34,21 @@ export class DlqMonitorService {
           botToken,
           adminTelegramId,
           `⚠️ *DLQ Alert — ${dlqName}*\n\n` +
-          `Mensagens aguardando: *${messageCount}*\n\n` +
-          `Acesse o painel do RabbitMQ para inspecionar e reprocessar:\n` +
-          `${managementUrl}`,
+            `Mensagens aguardando: *${messageCount}*\n\n` +
+            `Acesse o painel do RabbitMQ para inspecionar e reprocessar:\n` +
+            `${managementUrl}`,
         );
-        this.logger.warn(`DLQ alerta enviado: ${messageCount} mensagens em ${dlqName}`);
+        this.logger.warn(
+          `DLQ alerta enviado: ${messageCount} mensagens em ${dlqName}`,
+        );
       }
 
       this.lastAlertedCount = messageCount;
     } catch (error) {
       if (axios.isAxiosError(error) && error.code === 'ECONNREFUSED') {
-        this.logger.warn('RabbitMQ Management API indisponível — monitoramento de DLQ ignorado.');
+        this.logger.warn(
+          'RabbitMQ Management API indisponível — monitoramento de DLQ ignorado.',
+        );
         return;
       }
       this.logger.error('Erro ao verificar DLQ', error);

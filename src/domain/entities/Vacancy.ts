@@ -1,11 +1,11 @@
-import { Salary } from "../value-objects/Salary";
+import { Salary } from '../value-objects/Salary';
 
 export class Vacancy {
-	constructor(
-		public readonly id: string,
-		public readonly job: string,
-		public readonly area: string,
-		public readonly region: string,
-		public readonly salary: Salary,
-	) { }
+  constructor(
+    public readonly id: string,
+    public readonly job: string,
+    public readonly area: string,
+    public readonly region: string,
+    public readonly salary: Salary,
+  ) {}
 }

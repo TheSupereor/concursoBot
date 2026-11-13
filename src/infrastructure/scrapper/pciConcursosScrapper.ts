@@ -66,11 +66,36 @@ export class PciConcursosScrapper {
 
   private identifyArea(cargo: string): string {
     const upper = cargo.toUpperCase();
-    if (upper.includes('TI') || upper.includes('SISTEMAS') || upper.includes('TECNOLOGIA')) return 'TI';
-    if (upper.includes('SAÚDE') || upper.includes('MÉDICO') || upper.includes('ENFERMEIRO')) return 'SAUDE';
-    if (upper.includes('PROFESSOR') || upper.includes('EDUCAÇÃO') || upper.includes('DOCENTE')) return 'EDUCACAO';
-    if (upper.includes('POLICIAL') || upper.includes('DELEGADO') || upper.includes('AGENTE')) return 'POLICIAL';
-    if (upper.includes('TRIBUNAL') || upper.includes('JUDICIÁRIO') || upper.includes('ANALISTA JUDICIÁRIO')) return 'TRIBUNAIS';
+    if (
+      upper.includes('TI') ||
+      upper.includes('SISTEMAS') ||
+      upper.includes('TECNOLOGIA')
+    )
+      return 'TI';
+    if (
+      upper.includes('SAÚDE') ||
+      upper.includes('MÉDICO') ||
+      upper.includes('ENFERMEIRO')
+    )
+      return 'SAUDE';
+    if (
+      upper.includes('PROFESSOR') ||
+      upper.includes('EDUCAÇÃO') ||
+      upper.includes('DOCENTE')
+    )
+      return 'EDUCACAO';
+    if (
+      upper.includes('POLICIAL') ||
+      upper.includes('DELEGADO') ||
+      upper.includes('AGENTE')
+    )
+      return 'POLICIAL';
+    if (
+      upper.includes('TRIBUNAL') ||
+      upper.includes('JUDICIÁRIO') ||
+      upper.includes('ANALISTA JUDICIÁRIO')
+    )
+      return 'TRIBUNAIS';
     return 'Geral';
   }
 }

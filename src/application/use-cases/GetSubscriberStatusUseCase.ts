@@ -20,7 +20,8 @@ export class GetSubscriberStatusUseCase {
   ) {}
 
   async execute(telegramId: string): Promise<SubscriberStatus> {
-    const subscriber = await this.subscriberRepository.searchByTelegramId(telegramId);
+    const subscriber =
+      await this.subscriberRepository.searchByTelegramId(telegramId);
 
     if (!subscriber) {
       return { exists: false, isActive: false, preferences: [] };

@@ -53,27 +53,36 @@ export class TelegramBotUpdate {
       const status = await this.getSubscriberStatusUseCase.execute(telegramId);
 
       if (!status.exists) {
-        await ctx.reply('Você ainda não está cadastrado. Use /start para começar.');
+        await ctx.reply(
+          'Você ainda não está cadastrado. Use /start para começar.',
+        );
         return;
       }
 
       const assinaturaLabel = status.isActive ? '✅ Ativa' : '❌ Inativa';
       const areaEmoji: Record<string, string> = {
-        TI: '💻', SAUDE: '🏥', EDUCACAO: '📚', TRIBUNAIS: '⚖️', POLICIAL: '🚔',
+        TI: '💻',
+        SAUDE: '🏥',
+        EDUCACAO: '📚',
+        TRIBUNAIS: '⚖️',
+        POLICIAL: '🚔',
       };
 
       let prefsText: string;
       if (status.preferences.length === 0) {
         prefsText = '_Nenhuma área cadastrada_';
       } else {
-        prefsText = status.preferences.map((pref) => {
-          const emoji = areaEmoji[pref.area] ?? '📌';
-          const regionLabel = pref.region === 'BR' ? 'Nacional' : pref.region;
-          const salaryLabel = pref.minimumSalary === 0
-            ? 'qualquer salário'
-            : `R$ ${pref.minimumSalary.toLocaleString('pt-BR')}+`;
-          return `  ${emoji} *${pref.area}* — ${regionLabel} (${salaryLabel})`;
-        }).join('\n');
+        prefsText = status.preferences
+          .map((pref) => {
+            const emoji = areaEmoji[pref.area] ?? '📌';
+            const regionLabel = pref.region === 'BR' ? 'Nacional' : pref.region;
+            const salaryLabel =
+              pref.minimumSalary === 0
+                ? 'qualquer salário'
+                : `R$ ${pref.minimumSalary.toLocaleString('pt-BR')}+`;
+            return `  ${emoji} *${pref.area}* — ${regionLabel} (${salaryLabel})`;
+          })
+          .join('\n');
       }
 
       const totalPrefs = status.preferences.length;
@@ -87,7 +96,9 @@ export class TelegramBotUpdate {
       await ctx.reply(message, { parse_mode: 'Markdown' });
     } catch (error) {
       console.error('Erro ao buscar status', error);
-      await ctx.reply('Não consegui carregar seu status agora. Tente novamente.');
+      await ctx.reply(
+        'Não consegui carregar seu status agora. Tente novamente.',
+      );
     }
   }
 
@@ -166,7 +177,9 @@ export class TelegramBotUpdate {
     } catch (error) {
       console.error(error);
       await ctx.answerCbQuery(
-        error instanceof Error ? error.message : 'Erro ao adicionar preferência.',
+        error instanceof Error
+          ? error.message
+          : 'Erro ao adicionar preferência.',
         { show_alert: true },
       );
     }

@@ -13,7 +13,7 @@ export class PreferenceOrmEntity {
   region: string;
 
   // Usamos 'decimal' para dinheiro para evitar erros de arredondamento que o 'float' tem
-  @Column({ type: 'decimal', precision: 10, scale: 2 }) 
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   minimunSalary: number;
 
   // Relacionamento: Muitas preferências pertencem a UM assinante

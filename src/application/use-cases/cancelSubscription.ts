@@ -28,7 +28,7 @@ export class CancelSubscriptionUseCase {
       await this.notificationService.sendCustomAlert(
         subscriber,
         '⚠️ Sua assinatura foi cancelada e você não receberá mais alertas de vagas.\n\n' +
-        'Se mudar de ideia, use /assinar para reativar quando quiser.',
+          'Se mudar de ideia, use /assinar para reativar quando quiser.',
       );
     } catch (error) {
       console.error('Erro ao notificar cancelamento', error);
