@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Banco de Dados Relacional
+  mysql:
+    image: mysql:8.0
+    container_name: concursos-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: concursos_db
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: user_concursos
+      MYSQL_PASSWORD: user_password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Interface para visualizar o banco de dados (Acesse: http://localhost:8080)
+  adminer:
+    image: adminer
+    container_name: concursos-adminer
+    restart: always
+    ports:
+      - '8080:8080'
+    depends_on:
+      - mysql
+
+  # Mensageria (Acesse o painel: http://localhost:15672 | Login: guest / guest)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: concursos-rabbitmq
+    restart: always
+    ports:
+      - '5672:5672'   # Porta de comunicação do RabbitMQ
+      - '15672:15672' # Porta do painel de controle (Management Plugin)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
