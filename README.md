@@ -35,17 +35,17 @@ records live in [`.ai/`](.ai) and will move to `docs/` as they are translated an
 
 Legend: ✅ done · 🚧 in progress · 📋 planned
 
-| Phase                            | Status | Scope                                                                |
-| -------------------------------- | ------ | -------------------------------------------------------------------- |
-| 0. Baseline and repo hygiene     | 🚧     | CI, license, commit conventions, Dockerfile, README (this phase)     |
-| 1. Critical fixes                | 📋     | Billing, idempotency and messaging bugs, each with a regression test |
-| 2. Architecture and code quality | 📋     | Pure domain, modules, validated config, strict TypeScript            |
-| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                            |
-| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                |
-| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers            |
-| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure          |
-| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                             |
-| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                             |
+| Phase                            | Status | Scope                                                                                   |
+| -------------------------------- | ------ | --------------------------------------------------------------------------------------- |
+| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                     |
+| 1. Critical fixes                | 🚧     | 3 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test |
+| 2. Architecture and code quality | 📋     | Pure domain, modules, validated config, strict TypeScript                               |
+| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                               |
+| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                   |
+| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                               |
+| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                             |
+| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                |
+| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                |
 
 ### Launch milestones
 
@@ -57,15 +57,15 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 ### What changed recently
 
-- Docker image and full-stack compose file; GitHub Actions pipeline; Conventional Commits enforced.
+- Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
+- Phase 1 fixes so far: Telegram bot dependency injection, unique constraint on notification logs, new users start inactive.
 - Declared the missing `amqplib` dependency (the app could not start on a clean install).
 
 ## Known limitations
 
 These are known issues in the current code and are scheduled in the phases above:
 
-- **The app does not start yet**: dependency injection of `TelegramBotUpdate` is misconfigured (M1 blocker).
-- New subscribers are created as active, so billing is not enforced yet.
+- **End-to-end startup is not verified yet** (M1 blocker): the Telegram DI and database schema errors are fixed, but the RabbitMQ queue is declared with different arguments in two places and has not been run against real tokens.
 - Stripe cancellation events may not reach the right user (metadata is set on the checkout session, not the subscription).
 - Notification failures are swallowed, so retries and the dead-letter queue are not triggered for delivery errors.
 - Schema is created with `synchronize: true`; there are no migrations.
