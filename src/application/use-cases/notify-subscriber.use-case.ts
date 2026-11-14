@@ -1,8 +1,8 @@
-import { Vacancy } from '../../domain/entities/Vacancy';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
-import { INotificationService } from '../../domain/ports/INotificationService';
-import { INotificationLogRepository } from '../../domain/ports/INotificationLogRepository';
-import { RetryableDeliveryError } from '../errors/RetryableDeliveryError';
+import { Vacancy } from '../../domain/entities/vacancy';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
+import { INotificationService } from '../../domain/ports/notification-service.port';
+import { INotificationLogRepository } from '../../domain/ports/notification-log-repository.port';
+import { RetryableDeliveryError } from '../errors/retryable-delivery.error';
 
 export class NotifySubscriberUseCase {
   // Dependency Injection here: the use case asks for the interfaces, not real implementations.

@@ -1,4 +1,4 @@
-import { Subscriber } from '../entities/Subscriber';
+import { Subscriber } from '../entities/subscriber';
 
 // Dependency Inversion
 export interface ISubscriberRepository {

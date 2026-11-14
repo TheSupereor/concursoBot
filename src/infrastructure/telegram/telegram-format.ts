@@ -1,4 +1,4 @@
-import { Vacancy } from '../../domain/entities/Vacancy';
+import { Vacancy } from '../../domain/entities/vacancy';
 
 /**
  * Escapes text for Telegram's HTML parse mode, where only &, < and > are special.

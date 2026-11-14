@@ -1,5 +1,5 @@
-import { Subscriber } from '../entities/Subscriber';
-import { Vacancy } from '../entities/Vacancy';
+import { Subscriber } from '../entities/subscriber';
+import { Vacancy } from '../entities/vacancy';
 
 /**
  * Outcome of a delivery attempt. Adapters report failures instead of swallowing them so the

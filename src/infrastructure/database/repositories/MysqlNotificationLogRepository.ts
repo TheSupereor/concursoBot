@@ -8,7 +8,7 @@ import {
 import {
   ClaimResult,
   INotificationLogRepository,
-} from '../../../domain/ports/INotificationLogRepository';
+} from '../../../domain/ports/notification-log-repository.port';
 
 /** A PENDING claim older than this is treated as abandoned (the worker crashed). */
 export const CLAIM_LEASE_SECONDS = 300;

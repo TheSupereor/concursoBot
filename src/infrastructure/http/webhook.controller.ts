@@ -11,9 +11,9 @@ import {
   Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/processApprovedPaymentUseCase';
-import { CancelSubscriptionUseCase } from '../../application/use-cases/cancelSubscription';
-import { IProcessedEventRepository } from '../../domain/ports/IProcessedEventRepository';
+import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/process-approved-payment.use-case';
+import { CancelSubscriptionUseCase } from '../../application/use-cases/cancel-subscription.use-case';
+import { IProcessedEventRepository } from '../../domain/ports/processed-event-repository.port';
 import { StripeEvent } from '../billing/stripe-types';
 
 @Controller('webhooks')

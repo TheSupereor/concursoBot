@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { Subscriber } from '../../domain/entities/Subscriber';
-import { Vacancy } from '../../domain/entities/Vacancy';
-import { Salary } from '../../domain/value-objects/Salary';
-import { TelegramNotificationService } from './TelegramNotificationService';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { Vacancy } from '../../domain/entities/vacancy';
+import { Salary } from '../../domain/value-objects/salary';
+import { TelegramNotificationService } from './telegram-notification.service';
 
 jest.mock('axios');
 const post = axios.post as jest.Mock;

@@ -1,7 +1,7 @@
-import { Preference } from '../value-objects/Preference';
-import { Salary } from '../value-objects/Salary';
-import { Subscriber } from './Subscriber';
-import { Vacancy } from './Vacancy';
+import { Preference } from '../value-objects/preference';
+import { Salary } from '../value-objects/salary';
+import { Subscriber } from './subscriber';
+import { Vacancy } from './vacancy';
 
 describe('Entity: Subscriber', () => {
   describe('Preference Management', () => {

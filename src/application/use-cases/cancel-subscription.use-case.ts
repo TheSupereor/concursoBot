@@ -1,5 +1,5 @@
-import { INotificationService } from '../../domain/ports/INotificationService';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { INotificationService } from '../../domain/ports/notification-service.port';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 
 export class CancelSubscriptionUseCase {
   constructor(

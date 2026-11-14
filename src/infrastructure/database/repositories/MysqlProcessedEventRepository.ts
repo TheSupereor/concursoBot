@@ -5,7 +5,7 @@ import { StripeEventOrmEntity } from '../../../domain/entities/StripeEventOrmEnt
 import {
   EventDecision,
   IProcessedEventRepository,
-} from '../../../domain/ports/IProcessedEventRepository';
+} from '../../../domain/ports/processed-event-repository.port';
 
 const MYSQL_DUPLICATE_ENTRY = 'ER_DUP_ENTRY';
 

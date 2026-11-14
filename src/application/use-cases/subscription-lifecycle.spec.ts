@@ -1,8 +1,8 @@
-import { Subscriber } from '../../domain/entities/Subscriber';
-import { INotificationService } from '../../domain/ports/INotificationService';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
-import { CancelSubscriptionUseCase } from './cancelSubscription';
-import { ProcessApprovedPaymentUseCase } from './processApprovedPaymentUseCase';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { INotificationService } from '../../domain/ports/notification-service.port';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
+import { CancelSubscriptionUseCase } from './cancel-subscription.use-case';
+import { ProcessApprovedPaymentUseCase } from './process-approved-payment.use-case';
 
 describe('subscription lifecycle use cases', () => {
   let subscriber: Subscriber;

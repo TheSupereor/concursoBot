@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ISubscriberRepository } from '../../../domain/ports/ISubscriberRepository';
-import { Subscriber } from '../../../domain/entities/Subscriber';
-import { Preference } from '../../../domain/value-objects/Preference';
-import { Salary } from '../../../domain/value-objects/Salary';
+import { ISubscriberRepository } from '../../../domain/ports/subscriber-repository.port';
+import { Subscriber } from '../../../domain/entities/subscriber';
+import { Preference } from '../../../domain/value-objects/preference';
+import { Salary } from '../../../domain/value-objects/salary';
 import { SubscriberOrmEntity } from '../../../domain/entities/SubscriberOrmEntity';
 import { PreferenceOrmEntity } from '../../../domain/entities/PreferenceOrmEntity';
 

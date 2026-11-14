@@ -1,6 +1,6 @@
-import { Subscriber } from '../../domain/entities/Subscriber';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
-import { SignUpSubscriberUseCase } from './SignUpSubscriberUseCase';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
+import { SignUpSubscriberUseCase } from './sign-up-subscriber.use-case';
 
 describe('SignUpSubscriberUseCase', () => {
   let saved: Subscriber[];

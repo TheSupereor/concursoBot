@@ -1,6 +1,6 @@
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
-import { Preference } from '../../domain/value-objects/Preference';
-import { Salary } from '../../domain/value-objects/Salary';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
+import { Preference } from '../../domain/value-objects/preference';
+import { Salary } from '../../domain/value-objects/salary';
 
 export class AddPreferenceUseCase {
   constructor(private readonly subscriberRepository: ISubscriberRepository) {}

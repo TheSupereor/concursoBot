@@ -1,5 +1,5 @@
-import { Subscriber } from '../../domain/entities/Subscriber';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 
 export class SignUpSubscriberUseCase {
   constructor(private readonly subscriberRepository: ISubscriberRepository) {}

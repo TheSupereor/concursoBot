@@ -1,5 +1,5 @@
 import { Inject } from '@nestjs/common';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 
 export interface PreferenceStatus {
   area: string;

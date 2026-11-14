@@ -1,5 +1,5 @@
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
-import { Salary } from '../../domain/value-objects/Salary';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
+import { Salary } from '../../domain/value-objects/salary';
 
 export class DefineSalaryUseCase {
   constructor(private readonly subscriberRepository: ISubscriberRepository) {}

@@ -1,4 +1,4 @@
-import { Salary } from './Salary';
+import { Salary } from './salary';
 
 describe('Value Object: Salary', () => {
   it('should create a valid salary when the value is positive', () => {

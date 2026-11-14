@@ -5,8 +5,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 @Injectable()
-export class PciConcursosScrapper {
-  private readonly logger = new Logger(PciConcursosScrapper.name);
+export class PciConcursosScraper {
+  private readonly logger = new Logger(PciConcursosScraper.name);
   private readonly publishedIds = new Set<string>();
 
   constructor(
