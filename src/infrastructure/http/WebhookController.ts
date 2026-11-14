@@ -1,72 +1,92 @@
 import Stripe from 'stripe';
 import {
   Controller,
-  Post,
-  Req,
-  Res,
   Headers,
   HttpStatus,
+  Inject,
+  Logger,
+  Post,
   RawBodyRequest,
+  Req,
+  Res,
 } from '@nestjs/common';
-import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/processApprovedPaymentUseCase';
 import { Request, Response } from 'express';
+import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/processApprovedPaymentUseCase';
 import { CancelSubscriptionUseCase } from '../../application/use-cases/cancelSubscription';
+import { IProcessedEventRepository } from '../../domain/ports/IProcessedEventRepository';
+import { StripeEvent } from '../billing/stripe-types';
 
 @Controller('webhooks')
 export class WebhookController {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  private readonly logger = new Logger(WebhookController.name);
+  private readonly stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2026-04-22.dahlia',
   });
-  // private endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   constructor(
     private readonly processPaymentUseCase: ProcessApprovedPaymentUseCase,
     private readonly cancelSubscriptionUseCase: CancelSubscriptionUseCase,
+    @Inject('IProcessedEventRepository')
+    private readonly processedEvents: IProcessedEventRepository,
   ) {}
 
   @Post('stripe')
   async handleStripeWebhook(
-    @Req() req: RawBodyRequest<Request>, // Importante: tipar como RawBodyRequest
+    @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
     @Res() res: Response,
   ) {
-    let event: any; //Stripe.Event;
+    let event: StripeEvent;
 
     try {
-      // A validação criptográfica real acontecendo:
+      // Verifies the signature against the raw request body.
       event = this.stripe.webhooks.constructEvent(
-        req.rawBody, // Usando o buffer bruto
+        req.rawBody,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET,
       );
-    } catch (err) {
-      console.error(`⚠️ Webhook signature verification failed: ${err}`);
-      return res.status(HttpStatus.BAD_REQUEST).send(`Webhook Error`);
+    } catch (error) {
+      this.logger.warn(`Webhook signature verification failed: ${error}`);
+      return res.status(HttpStatus.BAD_REQUEST).send('Webhook Error');
     }
 
-    // Se passou, temos certeza que foi o Stripe quem mandou!
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as any; //Stripe.Checkout.Session;
-      const telegramId = session.client_reference_id; // Recuperamos aquele ID embutido!
+    // Stripe delivers events at least once: acknowledge duplicates without re-applying them.
+    const decision = await this.processedEvents.beginProcessing(
+      event.id,
+      event.type,
+    );
+    if (decision === 'already_processed') {
+      return res.status(HttpStatus.OK).send();
+    }
 
+    try {
+      await this.dispatch(event);
+      await this.processedEvents.markProcessed(event.id);
+    } catch (error) {
+      // 5xx makes Stripe retry later. The event stays unfinished, so the retry is handled.
+      this.logger.error(`Failed to process ${event.type} (${event.id})`, error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+    }
+
+    return res.status(HttpStatus.OK).send();
+  }
+
+  private async dispatch(event: StripeEvent): Promise<void> {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const telegramId = session.client_reference_id;
       if (telegramId) {
         await this.processPaymentUseCase.execute(telegramId);
-        console.log(`✅ Pagamento processado para: ${telegramId}`);
       }
+      return;
     }
 
-    // CENÁRIO 2: O CAMINHO TRISTE (ASSINATURA CANCELADA / VENCIDA)
     if (event.type === 'customer.subscription.deleted') {
-      const subscription = event.data.object;
-
-      // Resgatamos aquele ID que plantamos no metadata!
-      const telegramId = subscription.metadata.telegramId;
-
+      // The id comes from subscription_data.metadata set at checkout.
+      const telegramId = event.data.object.metadata?.telegramId;
       if (telegramId) {
         await this.cancelSubscriptionUseCase.execute(telegramId);
       }
     }
-
-    return res.status(HttpStatus.OK).send();
   }
 }
