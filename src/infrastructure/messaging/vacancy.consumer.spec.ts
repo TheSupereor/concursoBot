@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { RmqContext } from '@nestjs/microservices';
+import { Test } from '@nestjs/testing';
 import { NotifySubscriberUseCase } from '../../application/use-cases/notify-subscriber.use-case';
 import { VacancyConsumer } from './vacancy.consumer';
 
@@ -38,6 +39,15 @@ describe('VacancyConsumer', () => {
   });
 
   afterEach(() => jest.restoreAllMocks());
+
+  it('can be built by Nest dependency injection with only its use case', async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [VacancyConsumer],
+      providers: [{ provide: NotifySubscriberUseCase, useValue: {} }],
+    }).compile();
+
+    expect(moduleRef.get(VacancyConsumer)).toBeInstanceOf(VacancyConsumer);
+  });
 
   it('acknowledges a vacancy that was processed', async () => {
     await consumer.handleNewVacancy(validPayload, context);

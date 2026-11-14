@@ -16,6 +16,9 @@ const assert = require('assert');
 const BOT_PORT = 9999;
 const APP_PORT = 3100;
 const WEBHOOK_SECRET = 'whsec_smoke';
+// Isolated resources, so the smoke test never touches data from a manual run.
+const SMOKE_DB = 'concursos_smoke';
+const SMOKE_QUEUE = 'concursos.smoke.new';
 const USER = 111;
 
 const sent = []; // messages the bot sent through the fake Telegram API
@@ -92,13 +95,24 @@ const waitFor = async (label, cond, ms = 15000) => {
   }
   throw new Error('timeout waiting for: ' + label);
 };
-const sql = (q) =>
+const mysql = (db, q) =>
   execSync(
-    `docker exec concursos-mysql mysql -uroot -proot_password concursos_db -N -e "${q}"`,
-    { encoding: 'utf8' },
+    `docker exec concursos-mysql mysql -uroot -proot_password ${db} -N -e "${q}"`,
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
   ).trim();
+const sql = (q) => mysql(SMOKE_DB, q);
 
 (async () => {
+  mysql(
+    'mysql',
+    `drop database if exists ${SMOKE_DB}; create database ${SMOKE_DB}`,
+  );
+  {
+    const cleanup = await amqp.connect('amqp://guest:guest@localhost:5672');
+    const cleanupChannel = await cleanup.createChannel();
+    await cleanupChannel.deleteQueue(SMOKE_QUEUE);
+    await cleanup.close();
+  }
   await new Promise((r) => fake.listen(BOT_PORT, r));
   const env = {
     ...process.env,
@@ -106,11 +120,11 @@ const sql = (q) =>
     PORT: String(APP_PORT),
     DB_HOST: 'localhost',
     DB_PORT: '3306',
-    DB_USERNAME: 'user_concursos',
-    DB_PASSWORD: 'user_password',
-    DB_DATABASE: 'concursos_db',
+    DB_USERNAME: 'root',
+    DB_PASSWORD: 'root_password',
+    DB_DATABASE: SMOKE_DB,
     RABBITMQ_URL: 'amqp://guest:guest@localhost:5672',
-    RABBITMQ_QUEUE: 'concursos.new',
+    RABBITMQ_QUEUE: SMOKE_QUEUE,
     TELEGRAM_BOT_TOKEN: '123:smoke',
     TELEGRAM_API_ROOT: `http://localhost:${BOT_PORT}`,
     STRIPE_SECRET_KEY: 'sk_test_smoke',
@@ -208,6 +222,8 @@ const sql = (q) =>
 
     const conn = await amqp.connect('amqp://guest:guest@localhost:5672');
     const ch = await conn.createChannel();
+    await ch.assertQueue('concursos.dlq', { durable: true });
+    const dlqBefore = (await ch.checkQueue('concursos.dlq')).messageCount;
     const vacancy = {
       id: 'vaga-smoke-1',
       job: 'Analista <de> Sistemas_Sr *TI*',
@@ -216,7 +232,7 @@ const sql = (q) =>
       salary: 8000,
     };
     ch.sendToQueue(
-      'concursos.new',
+      SMOKE_QUEUE,
       Buffer.from(JSON.stringify({ pattern: 'concursos.new', data: vacancy })),
       { persistent: true },
     );
@@ -240,7 +256,7 @@ const sql = (q) =>
     );
 
     ch.sendToQueue(
-      'concursos.new',
+      SMOKE_QUEUE,
       Buffer.from(JSON.stringify({ pattern: 'concursos.new', data: vacancy })),
       { persistent: true },
     );
@@ -254,7 +270,7 @@ const sql = (q) =>
     );
 
     ch.sendToQueue(
-      'concursos.new',
+      SMOKE_QUEUE,
       Buffer.from(
         JSON.stringify({
           pattern: 'concursos.new',
@@ -263,15 +279,14 @@ const sql = (q) =>
       ),
       { persistent: true },
     );
-    // Three attempts with exponential backoff (2s + 4s) before the message is dead-lettered.
-    await new Promise((r) => setTimeout(r, 12000));
+    await new Promise((r) => setTimeout(r, 2000));
     const dlq = await ch.checkQueue('concursos.dlq');
+    const deadLettered = dlq.messageCount - dlqBefore;
     console.log(
-      `7. invalid message after retries -> DLQ ready=${dlq.messageCount} consumers=${dlq.consumerCount}`,
+      `7. malformed message -> DLQ (+${deadLettered}), consumers=${dlq.consumerCount}`,
     );
-    assert.strictEqual(dlq.messageCount, 1);
+    assert.strictEqual(deadLettered, 1);
     assert.strictEqual(dlq.consumerCount, 0);
-    await ch.purgeQueue('concursos.dlq');
     await conn.close();
     console.log('\nSMOKE TEST PASSED');
   } catch (e) {
@@ -282,5 +297,10 @@ const sql = (q) =>
     process.exitCode = 1;
   } finally {
     stop();
+    try {
+      mysql('mysql', `drop database if exists ${SMOKE_DB}`);
+    } catch {
+      /* best effort */
+    }
   }
 })();

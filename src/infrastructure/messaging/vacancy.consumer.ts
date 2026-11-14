@@ -1,7 +1,8 @@
-import { Controller, Logger } from '@nestjs/common';
+import { Controller, Inject, Logger, Optional } from '@nestjs/common';
 import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 import { z } from 'zod';
 import { NotifySubscriberUseCase } from '../../application/use-cases/notify-subscriber.use-case';
+import { VACANCY_RETRY_BASE_DELAY_MS } from '../../shared/tokens';
 import { Vacancy } from '../../domain/entities/vacancy';
 import { Salary } from '../../domain/value-objects/salary';
 
@@ -28,7 +29,10 @@ export class VacancyConsumer {
 
   constructor(
     private readonly notifyUseCase: NotifySubscriberUseCase,
-    // Base delay of the exponential backoff (2s, 4s). Overridable so tests do not wait.
+    // Base delay of the exponential backoff (2s, 4s). Optional so Nest does not try to
+    // inject a plain number, and overridable so tests do not wait.
+    @Optional()
+    @Inject(VACANCY_RETRY_BASE_DELAY_MS)
     private readonly baseDelayMs: number = DEFAULT_BASE_DELAY_MS,
   ) {}
 
