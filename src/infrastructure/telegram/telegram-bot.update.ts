@@ -1,4 +1,3 @@
-import Stripe from 'stripe';
 import { Action, Command, Ctx, Start, Update } from 'nestjs-telegraf';
 import { SignUpSubscriberUseCase } from '../../application/use-cases/sign-up-subscriber.use-case';
 import { Context, Markup } from 'telegraf';
@@ -11,23 +10,28 @@ import { Inject, Logger } from '@nestjs/common';
 import { AREAS } from '../../domain/value-objects/area';
 import { REGIONS } from '../../domain/value-objects/region';
 import { userMessageFor } from './user-messages';
+import { StripeClient } from '../billing/stripe-types';
+import { AppConfig } from '../../shared/config/app.config';
+import {
+  APP_CONFIG,
+  STRIPE_CLIENT,
+  SUBSCRIBER_REPOSITORY,
+} from '../../shared/tokens';
 import { buildCheckoutSessionParams } from '../billing/checkout-session';
 
 @Update()
 export class TelegramBotUpdate {
   private readonly logger = new Logger(TelegramBotUpdate.name);
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2026-04-22.dahlia',
-  });
-
   constructor(
     private readonly signUpSubscriberUseCase: SignUpSubscriberUseCase,
     private readonly addPreferenceUseCase: AddPreferenceUseCase,
-    @Inject('ISubscriberRepository')
+    @Inject(SUBSCRIBER_REPOSITORY)
     private readonly subscriberRepository: ISubscriberRepository,
     private readonly removePreferenceUseCase: RemovePreferenceUseCase,
     private readonly defineSalaryUseCase: DefineSalaryUseCase,
     private readonly getSubscriberStatusUseCase: GetSubscriberStatusUseCase,
+    @Inject(STRIPE_CLIENT) private readonly stripe: StripeClient,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   @Start()
@@ -258,11 +262,9 @@ export class TelegramBotUpdate {
       const session = await this.stripe.checkout.sessions.create(
         buildCheckoutSessionParams({
           telegramId,
-          priceId: process.env.STRIPE_PRICE_ID,
-          successUrl:
-            process.env.STRIPE_SUCCESS_URL ?? 'https://seusite.com/sucesso',
-          cancelUrl:
-            process.env.STRIPE_CANCEL_URL ?? 'https://seusite.com/cancelado',
+          priceId: this.config.stripe.priceId,
+          successUrl: this.config.stripe.successUrl,
+          cancelUrl: this.config.stripe.cancelUrl,
         }),
       );
 

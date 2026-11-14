@@ -1,4 +1,3 @@
-import Stripe from 'stripe';
 import {
   Controller,
   Headers,
@@ -14,19 +13,23 @@ import { Request, Response } from 'express';
 import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/process-approved-payment.use-case';
 import { CancelSubscriptionUseCase } from '../../application/use-cases/cancel-subscription.use-case';
 import { IProcessedEventRepository } from '../../domain/ports/processed-event-repository.port';
-import { StripeEvent } from '../billing/stripe-types';
+import { StripeClient, StripeEvent } from '../billing/stripe-types';
+import { AppConfig } from '../../shared/config/app.config';
+import {
+  APP_CONFIG,
+  PROCESSED_EVENT_REPOSITORY,
+  STRIPE_CLIENT,
+} from '../../shared/tokens';
 
 @Controller('webhooks')
 export class WebhookController {
   private readonly logger = new Logger(WebhookController.name);
-  private readonly stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2026-04-22.dahlia',
-  });
-
   constructor(
+    @Inject(STRIPE_CLIENT) private readonly stripe: StripeClient,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly processPaymentUseCase: ProcessApprovedPaymentUseCase,
     private readonly cancelSubscriptionUseCase: CancelSubscriptionUseCase,
-    @Inject('IProcessedEventRepository')
+    @Inject(PROCESSED_EVENT_REPOSITORY)
     private readonly processedEvents: IProcessedEventRepository,
   ) {}
 
@@ -43,7 +46,7 @@ export class WebhookController {
       event = this.stripe.webhooks.constructEvent(
         req.rawBody,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET,
+        this.config.stripe.webhookSecret,
       );
     } catch (error) {
       this.logger.warn(`Webhook signature verification failed: ${error}`);

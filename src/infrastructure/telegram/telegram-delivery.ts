@@ -1,31 +1,34 @@
 import { DeliveryResult } from '../../domain/ports/notification-service.port';
 
-interface HttpErrorShape {
+interface TelegramApiErrorShape {
   response?: {
-    status?: number;
-    data?: { parameters?: { retry_after?: number } };
+    error_code?: number;
+    parameters?: { retry_after?: number };
   };
 }
 
 /**
- * Maps a failed Telegram Bot API call to a DeliveryResult.
+ * Maps a failed Telegram Bot API call (a Telegraf TelegramError) to a DeliveryResult.
  * Anything unexpected is treated as retryable: a duplicate retry is safe because of the
  * notification log, a lost alert is not.
  */
 export function classifyTelegramError(error: unknown): DeliveryResult {
-  const status = (error as HttpErrorShape)?.response?.status;
+  const response = (error as TelegramApiErrorShape)?.response;
+  const code = response?.error_code;
 
-  if (status === 403) return { status: 'blocked' };
+  if (code === 403) return { status: 'blocked' };
 
-  if (status === 429) {
-    const retryAfterSeconds = (error as HttpErrorShape).response?.data
-      ?.parameters?.retry_after;
-    return { status: 'retryable', retryAfterSeconds };
+  if (code === 429) {
+    return {
+      status: 'retryable',
+      retryAfterSeconds: response?.parameters?.retry_after,
+    };
   }
 
-  if (status !== undefined && status >= 400 && status < 500) {
+  if (code !== undefined && code >= 400 && code < 500) {
     return { status: 'invalid' };
   }
 
+  // 5xx, network failures and anything without a Bot API response.
   return { status: 'retryable' };
 }

@@ -5,6 +5,11 @@ import Stripe from 'stripe';
 import { WebhookController } from './webhook.controller';
 import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/process-approved-payment.use-case';
 import { CancelSubscriptionUseCase } from '../../application/use-cases/cancel-subscription.use-case';
+import {
+  APP_CONFIG,
+  PROCESSED_EVENT_REPOSITORY,
+  STRIPE_CLIENT,
+} from '../../shared/tokens';
 import { IProcessedEventRepository } from '../../domain/ports/processed-event-repository.port';
 
 const WEBHOOK_SECRET = 'whsec_test_secret';
@@ -57,11 +62,6 @@ describe('WebhookController (Stripe)', () => {
     data: { object: { metadata: { telegramId } } },
   });
 
-  beforeAll(() => {
-    process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
-    process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET;
-  });
-
   beforeEach(async () => {
     processPayment = { execute: jest.fn().mockResolvedValue(undefined) };
     cancelSubscription = { execute: jest.fn().mockResolvedValue(undefined) };
@@ -69,10 +69,15 @@ describe('WebhookController (Stripe)', () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [WebhookController],
       providers: [
+        { provide: STRIPE_CLIENT, useValue: stripe },
+        {
+          provide: APP_CONFIG,
+          useValue: { stripe: { webhookSecret: WEBHOOK_SECRET } },
+        },
         { provide: ProcessApprovedPaymentUseCase, useValue: processPayment },
         { provide: CancelSubscriptionUseCase, useValue: cancelSubscription },
         {
-          provide: 'IProcessedEventRepository',
+          provide: PROCESSED_EVENT_REPOSITORY,
           useValue: new InMemoryProcessedEvents(),
         },
       ],

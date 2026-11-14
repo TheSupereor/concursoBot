@@ -35,17 +35,17 @@ records live in [`.ai/`](.ai) and will move to `docs/` as they are translated an
 
 Legend: ✅ done · 🚧 in progress · 📋 planned
 
-| Phase                            | Status | Scope                                                                                                                           |
-| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                             |
-| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                         |
-| 2. Architecture and code quality | 🚧     | 3 of 7 steps done: naming, persistence layer, domain model. Next: config, DI and modules, strict TypeScript, architecture rules |
-| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                                                                       |
-| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                                                           |
-| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                       |
-| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                     |
-| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                                                        |
-| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                                                        |
+| Phase                            | Status | Scope                                                                                                                                                        |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                                                          |
+| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                                                      |
+| 2. Architecture and code quality | 🚧     | 4 of 7 steps done: naming, persistence layer, domain model, validated config and feature modules. Next: strict TypeScript and lint, architecture rules, docs |
+| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                                                                                                    |
+| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                                                                                        |
+| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                                                    |
+| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                                                  |
+| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                                                                                     |
+| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                                                                                     |
 
 ### Launch milestones
 
@@ -59,14 +59,15 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
 - Phase 1 complete: new users start inactive, atomic notification idempotency, delivery failures propagate to retries and the DLQ, a single RabbitMQ topology, idempotent Stripe webhooks with the Telegram id on the subscription, and escaped HTML alerts.
-- Phase 2 so far: kebab-case file names, the domain and application layers are free of TypeORM and NestJS, and the domain model has typed errors, an immutable `Preference` validated against allow-lists (area, region) and no duplicate preferences. Bot callbacks are allow-listed.
+- Phase 2 so far: kebab-case file names; domain and application layers free of TypeORM and NestJS; typed domain errors and an immutable, validated `Preference`; environment validated once at startup (zod) and injected as typed config; one Stripe client and one Telegraf client; the app split into feature modules (`src/modules`).
+- New `npm run smoke`: end-to-end test of the real app against real MySQL and RabbitMQ with a fake Telegram Bot API (`/start`, signed Stripe webhook, button callbacks, vacancy delivery, idempotency, dead-lettering).
 - Declared the missing `amqplib` dependency (the app could not start on a clean install).
 
 ## Known limitations
 
 These are known issues in the current code and are scheduled in the phases above:
 
-- **End-to-end startup is not verified with real Telegram/Stripe credentials yet** (M1 blocker). The queue topology was verified against a real RabbitMQ broker.
+- **Not yet run with real Telegram and Stripe credentials, nor inside the app container** (M1 blocker). The whole flow is verified end to end against real MySQL and RabbitMQ with a fake Telegram API (`npm run smoke`).
 - Bot command replies still use legacy Markdown and Portuguese strings are inline (i18n comes later).
 - Schema is created with `synchronize: true`; there are no migrations.
 - The scraper reads a single region and its area classifier produces false positives.
@@ -88,6 +89,7 @@ npm run start:dev
 Useful commands:
 
 ```bash
+npm run smoke         # end-to-end test (needs `docker compose up -d mysql rabbitmq` and `npm run build`)
 npm run test:ci       # unit tests with coverage
 npm run lint:check
 npm run typecheck

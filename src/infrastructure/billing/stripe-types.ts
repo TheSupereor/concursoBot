@@ -8,3 +8,5 @@ export type StripeEvent = ReturnType<
 export type CheckoutSessionParams = NonNullable<
   Parameters<Stripe.Stripe['checkout']['sessions']['create']>[0]
 >;
+
+export type StripeClient = Stripe.Stripe;
