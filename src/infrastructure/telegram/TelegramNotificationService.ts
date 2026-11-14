@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { INotificationService } from '../../domain/ports/INotificationService';
+import {
+  DeliveryResult,
+  INotificationService,
+} from '../../domain/ports/INotificationService';
+import { classifyTelegramError } from './telegram-delivery';
 import { Subscriber } from '../../domain/entities/Subscriber';
 import { Vacancy } from '../../domain/entities/Vacancy';
 import axios from 'axios';
@@ -31,7 +35,7 @@ export class TelegramNotificationService implements INotificationService {
   async sendVacancyAlert(
     subscriber: Subscriber,
     vacancy: Vacancy,
-  ): Promise<void> {
+  ): Promise<DeliveryResult> {
     // Monta a mensagem bonitinha para o usuário
     const mensagem = `
 🚨 **Novo Edital Encontrado!** 🚨
@@ -44,48 +48,40 @@ export class TelegramNotificationService implements INotificationService {
 Acesse o portal para mais detalhes.
     `;
 
-    try {
-      // Aqui está a mágica! Em vez de chamar o axios direto, nós agendamos (schedule) a chamada.
-      // Se chegarem 5000 pedidos de uma vez, o Bottleneck enfileira e solta 1 a cada 35ms.
-      await this.limiter.schedule(() =>
-        axios.post(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
-          chat_id: subscriber.telegramId,
-          text: mensagem,
-          parse_mode: 'Markdown',
-        }),
-      );
-
-      console.log(`[Telegram] Alerta enviado para ${subscriber.telegramId}`);
-    } catch (error) {
-      console.error(
-        `Falha ao enviar mensagem para ${subscriber.telegramId}`,
-        error,
-      );
-      // Aqui entraria a lógica de mandar para a DLQ (Dead Letter Queue) do RabbitMQ e Retry
-    }
+    return this.deliver(subscriber.telegramId, mensagem);
   }
 
-  async sendCustomAlert(subscriber: Subscriber, text: string): Promise<void> {
+  async sendCustomAlert(
+    subscriber: Subscriber,
+    text: string,
+  ): Promise<DeliveryResult> {
+    return this.deliver(subscriber.telegramId, text);
+  }
+
+  /**
+   * Sends one message through the rate limiter and reports the outcome instead of throwing,
+   * so callers can decide whether to retry. Errors are logged by status only: the raw axios
+   * error embeds the request URL, which contains the bot token.
+   */
+  private async deliver(chatId: string, text: string): Promise<DeliveryResult> {
     try {
-      // Aqui está a mágica! Em vez de chamar o axios direto, nós agendamos (schedule) a chamada.
-      // Se chegarem 5000 pedidos de uma vez, o Bottleneck enfileira e solta 1 a cada 35ms.
+      // Bottleneck queues requests and releases one every 35ms.
       await this.limiter.schedule(() =>
         axios.post(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
-          chat_id: subscriber.telegramId,
-          text: text,
+          chat_id: chatId,
+          text,
           parse_mode: 'Markdown',
         }),
       );
-
-      console.log(
-        `[Telegram] Alerta customizado enviado para ${subscriber.telegramId}`,
-      );
+      return { status: 'sent' };
     } catch (error) {
+      const result = classifyTelegramError(error);
+      const httpStatus = (error as { response?: { status?: number } })?.response
+        ?.status;
       console.error(
-        `Falha ao enviar mensagem para ${subscriber.telegramId}`,
-        error,
+        `[Telegram] Delivery to ${chatId} failed (${result.status}, http ${httpStatus ?? 'n/a'})`,
       );
-      // Aqui entraria a lógica de mandar para a DLQ (Dead Letter Queue) do RabbitMQ e Retry
+      return result;
     }
   }
 }

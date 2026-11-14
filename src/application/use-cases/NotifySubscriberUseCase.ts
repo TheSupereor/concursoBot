@@ -2,6 +2,7 @@ import { Vacancy } from '../../domain/entities/Vacancy';
 import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
 import { INotificationService } from '../../domain/ports/INotificationService';
 import { INotificationLogRepository } from '../../domain/ports/INotificationLogRepository';
+import { RetryableDeliveryError } from '../errors/RetryableDeliveryError';
 
 export class NotifySubscriberUseCase {
   // Dependency Injection here: the use case asks for the interfaces, not real implementations.
@@ -17,6 +18,8 @@ export class NotifySubscriberUseCase {
     // look for active subscribers
     const activeSubscribers =
       await this.subscriberRepository.searchActiveSubscribers();
+
+    let retryableFailures = 0;
 
     // for each subscriver, he leaves the decision to the business Rules (domain)
     for (const subscriber of activeSubscribers) {
@@ -34,12 +37,37 @@ export class NotifySubscriberUseCase {
           continue; // Pula para a próxima pessoa da fila
         }
 
-        await this.notificationService.sendVacancyAlert(subscriber, newVacancy);
-        await this.notificationLogRepository.registerSent(
-          subscriber.telegramId,
-          newVacancy.id,
+        const result = await this.notificationService.sendVacancyAlert(
+          subscriber,
+          newVacancy,
         );
+
+        switch (result.status) {
+          case 'sent':
+            await this.notificationLogRepository.registerSent(
+              subscriber.telegramId,
+              newVacancy.id,
+            );
+            break;
+          case 'retryable':
+            // Do not log as sent: the whole message is retried and already-sent
+            // subscribers are skipped through the notification log.
+            retryableFailures++;
+            break;
+          case 'blocked':
+          case 'invalid':
+            // Retrying cannot help; skip so one bad recipient never blocks the others.
+            // TODO(phase 2): replace console.* with a logger port.
+            console.warn(
+              `Skipping vacancy ${newVacancy.id} for ${subscriber.telegramId}: delivery ${result.status}`,
+            );
+            break;
+        }
       }
+    }
+
+    if (retryableFailures > 0) {
+      throw new RetryableDeliveryError(newVacancy.id, retryableFailures);
     }
   }
 }
