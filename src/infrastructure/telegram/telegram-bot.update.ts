@@ -8,10 +8,14 @@ import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.
 import { DefineSalaryUseCase } from '../../application/use-cases/define-salary.use-case';
 import { GetSubscriberStatusUseCase } from '../../application/use-cases/get-subscriber-status.use-case';
 import { Inject, Logger } from '@nestjs/common';
+import { AREAS } from '../../domain/value-objects/area';
+import { REGIONS } from '../../domain/value-objects/region';
+import { userMessageFor } from './user-messages';
 import { buildCheckoutSessionParams } from '../billing/checkout-session';
 
 @Update()
 export class TelegramBotUpdate {
+  private readonly logger = new Logger(TelegramBotUpdate.name);
   private stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2026-04-22.dahlia',
   });
@@ -126,7 +130,7 @@ export class TelegramBotUpdate {
     );
   }
 
-  @Action(/add_area_(.+)/)
+  @Action(new RegExp(`^add_area_(${AREAS.join('|')})$`))
   async onSelectedArea(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const selectedArea = ctx.match[1];
 
@@ -161,7 +165,9 @@ export class TelegramBotUpdate {
     );
   }
 
-  @Action(/pick_region:([^:]+):(.+)/)
+  @Action(
+    new RegExp(`^pick_region:(${AREAS.join('|')}):(${REGIONS.join('|')})$`),
+  )
   async onRegionSelected(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const telegramId = ctx.from.id.toString();
     const area = ctx.match[1];
@@ -177,13 +183,8 @@ export class TelegramBotUpdate {
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
-      console.error(error);
-      await ctx.answerCbQuery(
-        error instanceof Error
-          ? error.message
-          : 'Erro ao adicionar preferência.',
-        { show_alert: true },
-      );
+      this.logger.error(error);
+      await ctx.answerCbQuery(userMessageFor(error), { show_alert: true });
     }
   }
 
@@ -205,7 +206,10 @@ export class TelegramBotUpdate {
     // Vamos criar um botão com um "❌" para CADA área que o usuário tem salva
     const buttons = preferencias.map((pref) => {
       return [
-        Markup.button.callback(`Remover ${pref.area}`, `del_area_${pref.area}`),
+        Markup.button.callback(
+          `Remover ${pref.area} — ${pref.region}`,
+          `del_pref:${pref.area}:${pref.region}`,
+        ),
       ];
     });
 
@@ -218,25 +222,30 @@ export class TelegramBotUpdate {
   }
 
   // 2. A Action que escuta o clique no botão de excluir
-  @Action(/del_area_(.+)/)
+  @Action(new RegExp(`^del_pref:(${AREAS.join('|')}):(${REGIONS.join('|')})$`))
   async onAreaRemovida(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const telegramId = ctx.from.id.toString();
-    const areaParaRemover = ctx.match[1];
+    const areaToRemove = ctx.match[1];
+    const regionToRemove = ctx.match[2];
 
     try {
-      await this.removePreferenceUseCase.execute(telegramId, areaParaRemover);
+      await this.removePreferenceUseCase.execute(
+        telegramId,
+        areaToRemove,
+        regionToRemove,
+      );
 
       // Responde ao callback para tirar o ícone de reloginho do botão
       await ctx.answerCbQuery('Área removida com sucesso!');
 
       // Edita a mensagem original ou manda uma nova
       await ctx.editMessageText(
-        `✅ A área **${areaParaRemover}** foi removida do seu radar.`,
+        `✅ ${areaToRemove} — ${regionToRemove} foi removida do seu radar.`,
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
-      console.error(error);
-      await ctx.answerCbQuery('Erro ao remover a área.', { show_alert: true });
+      this.logger.error(error);
+      await ctx.answerCbQuery(userMessageFor(error), { show_alert: true });
     }
   }
 
@@ -316,10 +325,8 @@ export class TelegramBotUpdate {
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
-      Logger.error(error);
-      await ctx.answerCbQuery('Erro ao atualizar salário.', {
-        show_alert: true,
-      });
+      this.logger.error(error);
+      await ctx.answerCbQuery(userMessageFor(error), { show_alert: true });
     }
   }
 }

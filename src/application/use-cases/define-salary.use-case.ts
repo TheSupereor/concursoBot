@@ -1,3 +1,4 @@
+import { SubscriberNotFoundError } from '../errors/subscriber-not-found.error';
 import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 import { Salary } from '../../domain/value-objects/salary';
 
@@ -9,11 +10,11 @@ export class DefineSalaryUseCase {
       await this.subscriberRepository.searchByTelegramId(telegramId);
 
     if (!subscriber) {
-      throw new Error('Subscriber não encontrado.');
+      throw new SubscriberNotFoundError(telegramId);
     }
 
     const newSalary = new Salary(valor);
-    subscriber.defineMinimumGlobalSalary(newSalary);
+    subscriber.applyMinimumSalary(newSalary);
 
     await this.subscriberRepository.save(subscriber);
   }

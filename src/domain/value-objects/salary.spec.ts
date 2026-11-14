@@ -1,22 +1,27 @@
+import { InvalidSalaryError } from '../errors/domain.error';
 import { Salary } from './salary';
 
 describe('Value Object: Salary', () => {
-  it('should create a valid salary when the value is positive', () => {
-    const salary = new Salary(5000);
-    expect(salary.value).toBe(5000);
+  it('creates a salary from a non-negative value', () => {
+    expect(new Salary(5000).value).toBe(5000);
+    expect(new Salary(0).value).toBe(0);
   });
 
-  it('should launch an error when tries to create a negative salary', () => {
-    expect(() => new Salary(-100)).toThrow('Um salário não pode ser negativo.'); // change to check for a error code in the future?
+  it.each([-100, NaN, Infinity])('rejects the invalid value %p', (value) => {
+    expect(() => new Salary(value)).toThrow(InvalidSalaryError);
   });
 
-  it('should return true if is bigger or equal to another salary', () => {
+  it('exposes a stable error code for the UI layer', () => {
+    expect(() => new Salary(-1)).toThrow(
+      expect.objectContaining({ code: 'INVALID_SALARY' }),
+    );
+  });
+
+  it('compares with another salary', () => {
     const desiredSalary = new Salary(5000);
-    const vacancySalary = new Salary(8000);
-    const lowerSalary = new Salary(3000);
 
-    expect(vacancySalary.isBiggerThanOrEqual(desiredSalary)).toBe(true);
+    expect(new Salary(8000).isBiggerThanOrEqual(desiredSalary)).toBe(true);
     expect(desiredSalary.isBiggerThanOrEqual(desiredSalary)).toBe(true);
-    expect(lowerSalary.isBiggerThanOrEqual(desiredSalary)).toBe(false);
+    expect(new Salary(3000).isBiggerThanOrEqual(desiredSalary)).toBe(false);
   });
 });

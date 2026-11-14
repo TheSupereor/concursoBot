@@ -1,9 +1,10 @@
-// value-objects are a business concept, they dont have an ID, but they have to validate themselves
-// a value-object must never be initialized with an invalid state
+import { InvalidSalaryError } from '../errors/domain.error';
+
+// A value object has no identity and must never exist in an invalid state.
 export class Salary {
   constructor(public readonly value: number) {
-    if (value < 0) {
-      throw new Error('Um salário não pode ser negativo.');
+    if (!Number.isFinite(value) || value < 0) {
+      throw new InvalidSalaryError(value);
     }
   }
 

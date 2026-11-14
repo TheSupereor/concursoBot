@@ -14,7 +14,7 @@ describe('SubscriberMapper', () => {
     preference.area = 'TI';
     preference.region = 'SP';
     // MySQL returns DECIMAL columns as strings
-    preference.minimunSalary = '3500.00' as unknown as number;
+    preference.minimumSalary = '3500.00' as unknown as number;
     orm.preferences = [preference];
     return orm;
   };
@@ -25,7 +25,7 @@ describe('SubscriberMapper', () => {
     expect(subscriber.telegramId).toBe('42');
     expect(subscriber.isActive).toBe(true);
     expect(subscriber.getPreferences()).toHaveLength(1);
-    expect(subscriber.getPreferences()[0].minimunSalary.value).toBe(3500);
+    expect(subscriber.getPreferences()[0].minimumSalary.value).toBe(3500);
   });
 
   it('tolerates a row loaded without its preferences relation', () => {
@@ -48,7 +48,7 @@ describe('SubscriberMapper', () => {
     expect(orm.preferences[0]).toMatchObject({
       area: 'SAUDE',
       region: 'BR',
-      minimunSalary: 0,
+      minimumSalary: 0,
     });
   });
 

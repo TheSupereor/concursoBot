@@ -80,10 +80,10 @@ describe('NotifySubscriberUseCase', () => {
 
   it('notifies only the subscribers interested in the vacancy', async () => {
     const tiSubscriber = interested('telegram-1', 'TI');
-    const lawSubscriber = interested('telegram-2', 'Direito');
+    const healthSubscriber = interested('telegram-2', 'SAUDE');
     subscribers.searchActiveSubscribers.mockResolvedValue([
       tiSubscriber,
-      lawSubscriber,
+      healthSubscriber,
     ]);
 
     await useCase.execute(vacancy);
