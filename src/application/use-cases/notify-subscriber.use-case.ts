@@ -2,6 +2,7 @@ import { Vacancy } from '../../domain/entities/vacancy';
 import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 import { INotificationService } from '../../domain/ports/notification-service.port';
 import { INotificationLogRepository } from '../../domain/ports/notification-log-repository.port';
+import { ILogger } from '../ports/logger.port';
 import { RetryableDeliveryError } from '../errors/retryable-delivery.error';
 
 export class NotifySubscriberUseCase {
@@ -11,6 +12,7 @@ export class NotifySubscriberUseCase {
     private readonly subscriberRepository: ISubscriberRepository,
     private readonly notificationService: INotificationService,
     private readonly notificationLogRepository: INotificationLogRepository,
+    private readonly logger: ILogger,
   ) {}
 
   /**
@@ -76,8 +78,7 @@ export class NotifySubscriberUseCase {
             telegramId,
             newVacancy.id,
           );
-          // TODO(phase 2): replace console.* with a logger port.
-          console.warn(
+          this.logger.warn(
             `Skipping vacancy ${newVacancy.id} for ${telegramId}: delivery ${result.status}`,
           );
           break;

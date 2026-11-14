@@ -12,13 +12,13 @@ export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED';
 @Unique('UQ_telegramId_vacancyId', ['telegramId', 'vacancyId'])
 export class NotificationLogOrmEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  telegramId: string;
+  telegramId!: string;
 
   @Column()
-  vacancyId: string;
+  vacancyId!: string;
 
   // PENDING = claimed and being delivered. The column default is SENT so rows written before
   // statuses existed (which only recorded successful deliveries) keep their meaning.
@@ -27,12 +27,12 @@ export class NotificationLogOrmEntity {
     enum: ['PENDING', 'SENT', 'FAILED'],
     default: 'SENT',
   })
-  status: NotificationStatus;
+  status!: NotificationStatus;
 
   // Start of the current claim; a PENDING claim older than the lease is considered abandoned.
   @Column({ type: 'datetime', nullable: true })
-  claimedAt: Date | null;
+  claimedAt!: Date | null;
 
   @CreateDateColumn()
-  sentDate: Date;
+  sentDate!: Date;
 }

@@ -26,12 +26,12 @@ export class DlqMonitorService {
     if (!adminId) return;
 
     try {
-      const { data } = await axios.get(
+      const { data } = await axios.get<{ messages_ready?: number }>(
         `${managementUrl}/api/queues/%2F/${DEAD_LETTER_QUEUE}`,
         { auth: { username: user, password } },
       );
 
-      const messageCount: number = data.messages_ready ?? 0;
+      const messageCount = data.messages_ready ?? 0;
 
       if (messageCount > this.lastAlertedCount) {
         // Plain text on purpose: nothing here may be misparsed as markup.
@@ -40,7 +40,7 @@ export class DlqMonitorService {
           `⚠️ DLQ alert: ${DEAD_LETTER_QUEUE}\n\n` +
             `Messages waiting: ${messageCount}\n\n` +
             `Inspect and replay them in the RabbitMQ management UI:\n` +
-            `${managementUrl}`,
+            managementUrl,
         );
         this.logger.warn(
           `DLQ alert sent: ${messageCount} messages in ${DEAD_LETTER_QUEUE}`,

@@ -72,7 +72,7 @@ describe('Entity: Subscriber', () => {
 
       const left = subscriber.getPreferences();
       expect(left).toHaveLength(1);
-      expect(left[0].region).toBe('RJ');
+      expect(left[0]?.region).toBe('RJ');
     });
 
     it('does not expose its internal list', () => {

@@ -7,24 +7,33 @@ import { ProcessApprovedPaymentUseCase } from '../application/use-cases/process-
 import { RemovePreferenceUseCase } from '../application/use-cases/remove-preference.use-case';
 import { SignUpSubscriberUseCase } from '../application/use-cases/sign-up-subscriber.use-case';
 import { provideUseCase } from '../shared/provide-use-case';
-import { NOTIFICATION_SERVICE, SUBSCRIBER_REPOSITORY } from '../shared/tokens';
+import {
+  LOGGER,
+  NOTIFICATION_SERVICE,
+  SUBSCRIBER_REPOSITORY,
+} from '../shared/tokens';
 import { PersistenceModule } from './persistence.module';
 import { TelegramModule } from './telegram.module';
 
 const repository = [SUBSCRIBER_REPOSITORY];
-const repositoryAndNotifier = [SUBSCRIBER_REPOSITORY, NOTIFICATION_SERVICE];
+const repositoryAndLogger = [SUBSCRIBER_REPOSITORY, LOGGER];
+const repositoryNotifierAndLogger = [
+  SUBSCRIBER_REPOSITORY,
+  NOTIFICATION_SERVICE,
+  LOGGER,
+];
 
 /** Subscriber lifecycle: sign-up, preferences, salary filter, activation and cancellation. */
 @Module({
   imports: [PersistenceModule, TelegramModule],
   providers: [
-    provideUseCase(SignUpSubscriberUseCase, repository),
+    provideUseCase(SignUpSubscriberUseCase, repositoryAndLogger),
     provideUseCase(AddPreferenceUseCase, repository),
     provideUseCase(RemovePreferenceUseCase, repository),
     provideUseCase(DefineSalaryUseCase, repository),
     provideUseCase(GetSubscriberStatusUseCase, repository),
-    provideUseCase(ProcessApprovedPaymentUseCase, repositoryAndNotifier),
-    provideUseCase(CancelSubscriptionUseCase, repositoryAndNotifier),
+    provideUseCase(ProcessApprovedPaymentUseCase, repositoryNotifierAndLogger),
+    provideUseCase(CancelSubscriptionUseCase, repositoryNotifierAndLogger),
   ],
   exports: [
     SignUpSubscriberUseCase,

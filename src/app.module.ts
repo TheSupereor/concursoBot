@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigModule } from './shared/config/app-config.module';
+import { LoggingModule } from './modules/logging.module';
 import { BillingModule } from './modules/billing.module';
 import { MonitoringModule } from './modules/monitoring.module';
 import { NotificationsModule } from './modules/notifications.module';
@@ -14,6 +15,7 @@ import { TelegramModule } from './modules/telegram.module';
 @Module({
   imports: [
     AppConfigModule,
+    LoggingModule,
     ScheduleModule.forRoot(),
     PersistenceModule,
     TelegramModule,

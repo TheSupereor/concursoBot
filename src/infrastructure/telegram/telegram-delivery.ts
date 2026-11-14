@@ -13,7 +13,7 @@ interface TelegramApiErrorShape {
  * notification log, a lost alert is not.
  */
 export function classifyTelegramError(error: unknown): DeliveryResult {
-  const response = (error as TelegramApiErrorShape)?.response;
+  const response = (error as TelegramApiErrorShape | undefined)?.response;
   const code = response?.error_code;
 
   if (code === 403) return { status: 'blocked' };

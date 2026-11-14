@@ -37,7 +37,7 @@ export class MysqlNotificationLogRepository implements INotificationLogRepositor
         .execute();
       return 'claimed';
     } catch (error) {
-      if ((error as { code?: string })?.code !== MYSQL_DUPLICATE_ENTRY) {
+      if ((error as { code?: string }).code !== MYSQL_DUPLICATE_ENTRY) {
         throw error;
       }
     }

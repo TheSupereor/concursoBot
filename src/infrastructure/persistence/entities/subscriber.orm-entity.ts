@@ -4,10 +4,10 @@ import { PreferenceOrmEntity } from './preference.orm-entity';
 @Entity('subscribers')
 export class SubscriberOrmEntity {
   @PrimaryColumn() // Usamos PrimaryColumn porque o telegramId já é único e vem de fora
-  telegramId: string;
+  telegramId!: string;
 
   @Column({ default: false }) // No MySQL vira um campo BOOLEAN (TINYINT)
-  isActive: boolean;
+  isActive!: boolean;
 
   // Relacionamento: Um assinante pode ter MUITAS preferências
   // O 'cascade: true' significa que se salvarmos o assinante, as preferências salvam junto
@@ -15,5 +15,5 @@ export class SubscriberOrmEntity {
     cascade: true,
     orphanedRowAction: 'delete',
   })
-  preferences: PreferenceOrmEntity[];
+  preferences?: PreferenceOrmEntity[];
 }
