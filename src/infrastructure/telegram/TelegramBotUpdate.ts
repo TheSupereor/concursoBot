@@ -8,6 +8,7 @@ import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository'
 import { DefineSalaryUseCase } from '../../application/use-cases/DefineSalaryUseCase';
 import { GetSubscriberStatusUseCase } from '../../application/use-cases/GetSubscriberStatusUseCase';
 import { Inject, Logger } from '@nestjs/common';
+import { buildCheckoutSessionParams } from '../billing/checkout-session';
 
 @Update()
 export class TelegramBotUpdate {
@@ -245,24 +246,16 @@ export class TelegramBotUpdate {
 
     try {
       // Cria uma sessão de checkout no Stripe
-      const session = await this.stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        mode: 'subscription',
-        line_items: [
-          {
-            // Você cria esse "Price ID" lá no painel do Stripe (ex: R$ 49,90/mês)
-            price: process.env.STRIPE_PRICE_ID,
-            quantity: 1,
-          },
-        ],
-        // O SEGREDO ESTÁ AQUI: Enviamos o ID do Telegram de forma oculta
-        client_reference_id: telegramId,
-        success_url: 'https://seusite.com/sucesso', // Uma página simples de "Obrigado"
-        cancel_url: 'https://seusite.com/cancelado',
-        metadata: {
-          telegramId: telegramId, // O Stripe vai grudar essa informação na assinatura para sempre
-        },
-      });
+      const session = await this.stripe.checkout.sessions.create(
+        buildCheckoutSessionParams({
+          telegramId,
+          priceId: process.env.STRIPE_PRICE_ID,
+          successUrl:
+            process.env.STRIPE_SUCCESS_URL ?? 'https://seusite.com/sucesso',
+          cancelUrl:
+            process.env.STRIPE_CANCEL_URL ?? 'https://seusite.com/cancelado',
+        }),
+      );
 
       await ctx.reply(
         `💳 *Ative seu Radar Premium!*\n\n` +

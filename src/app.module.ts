@@ -23,6 +23,8 @@ import { SignUpSubscriberUseCase } from './application/use-cases/SignUpSubscribe
 import { RemovePreferenceUseCase } from './application/use-cases/removePreferenceUseCase';
 import { AddPreferenceUseCase } from './application/use-cases/addPreferenceUseCase';
 import { NotificationLogOrmEntity } from './domain/entities/NotificationLogOrmEntity';
+import { StripeEventOrmEntity } from './domain/entities/StripeEventOrmEntity';
+import { MysqlProcessedEventRepository } from './infrastructure/database/repositories/MysqlProcessedEventRepository';
 import { ProcessApprovedPaymentUseCase } from './application/use-cases/processApprovedPaymentUseCase';
 import { CancelSubscriptionUseCase } from './application/use-cases/cancelSubscription';
 
@@ -57,6 +59,7 @@ import {
           SubscriberOrmEntity,
           PreferenceOrmEntity,
           NotificationLogOrmEntity,
+          StripeEventOrmEntity,
         ],
         synchronize: true,
       }),
@@ -65,6 +68,7 @@ import {
       SubscriberOrmEntity,
       PreferenceOrmEntity,
       NotificationLogOrmEntity,
+      StripeEventOrmEntity,
     ]),
 
     TelegrafModule.forRootAsync({
@@ -97,6 +101,10 @@ import {
     {
       provide: 'INotificationService',
       useClass: TelegramNotificationService,
+    },
+    {
+      provide: 'IProcessedEventRepository',
+      useClass: MysqlProcessedEventRepository,
     },
     {
       provide: 'INotificationLogRepository',

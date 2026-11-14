@@ -18,6 +18,9 @@ export class CancelSubscriptionUseCase {
       return;
     }
 
+    // Idempotent: cancelling an already inactive subscriber changes nothing and notifies no one.
+    if (!subscriber.isActive) return;
+
     // 1. Regra de Negócio: Desativa a conta
     subscriber.cancelSubscription();
 

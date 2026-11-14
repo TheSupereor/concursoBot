@@ -15,6 +15,9 @@ export class ProcessApprovedPaymentUseCase {
       throw new Error('Pagamento recebido para um assinante não encontrado.');
     }
 
+    // Idempotent: a repeated or concurrent payment event must not re-activate or re-notify.
+    if (subscriber.isActive) return;
+
     subscriber.activateSubscription();
     await this.subscriberRepository.save(subscriber);
     await this.notificationService.sendCustomAlert(
