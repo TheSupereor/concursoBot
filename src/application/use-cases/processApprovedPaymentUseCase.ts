@@ -17,7 +17,7 @@ export class ProcessApprovedPaymentUseCase {
 
     subscriber.activateSubscription();
     await this.subscriberRepository.save(subscriber);
-    this.notificationService.sendCustomAlert(
+    await this.notificationService.sendCustomAlert(
       subscriber,
       `Assinatura ativada com sucesso!`,
     );
