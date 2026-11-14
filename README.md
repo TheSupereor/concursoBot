@@ -28,24 +28,23 @@ subscriber's preferences (area, region, minimum salary) and sends real-time aler
 
 NestJS · TypeScript · MySQL (TypeORM) · RabbitMQ · Telegraf · Stripe · Docker · GitHub Actions
 
-Architecture: hexagonal (ports and adapters) with a pure domain layer. Architecture notes and decision
-records live in [`.ai/`](.ai) and will move to `docs/` as they are translated and consolidated.
+Architecture: hexagonal (ports and adapters) with a pure domain layer, enforced in CI. See [`docs/architecture.md`](docs/architecture.md) and the [decision records](docs/adr/README.md).
 
 ## Progress board
 
 Legend: ✅ done · 🚧 in progress · 📋 planned
 
-| Phase                            | Status | Scope                                                                                                                                                     |
-| -------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                                                       |
-| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                                                   |
-| 2. Architecture and code quality | 🚧     | 5 of 7 steps done: naming, persistence layer, domain model, config and modules, strict TypeScript and lint. Next: architecture rules in CI, docs and ADRs |
-| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                                                                                                 |
-| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                                                                                     |
-| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                                                 |
-| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                                               |
-| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                                                                                  |
-| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                                                                                  |
+| Phase                            | Status | Scope                                                                                                                                      |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                                        |
+| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                                    |
+| 2. Architecture and code quality | ✅     | Naming, persistence layer, domain model, validated config and modules, strict TypeScript and lint, architecture rules in CI, docs and ADRs |
+| 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                                                                                  |
+| 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                                                                      |
+| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                                  |
+| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                                |
+| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                                                                   |
+| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                                                                   |
 
 ### Launch milestones
 
@@ -60,6 +59,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
 - Phase 1 complete: new users start inactive, atomic notification idempotency, delivery failures propagate to retries and the DLQ, a single RabbitMQ topology, idempotent Stripe webhooks with the Telegram id on the subscription, and escaped HTML alerts.
 - Phase 2 so far: kebab-case file names; domain and application layers free of TypeORM and NestJS; typed domain errors and an immutable, validated `Preference`; environment validated once at startup (zod) and injected as typed config; one Stripe client and one Telegraf client; the app split into feature modules (`src/modules`).
+- Phase 2 complete. Architecture rules (`npm run arch:check`) now run in CI and fail the build if the domain or application layers import a framework or an outer layer; `docs/architecture.md` and nine ADRs in English document the design.
 - TypeScript `strict` with `noUncheckedIndexedAccess`, ESLint `strict-type-checked` (no `any`, no `console`), and a logger port for the application layer. The vacancy consumer validates its payload and dead-letters malformed messages immediately; it now has tests.
 - New `npm run smoke`: end-to-end test of the real app against real MySQL and RabbitMQ with a fake Telegram Bot API (`/start`, signed Stripe webhook, button callbacks, vacancy delivery, idempotency, dead-lettering).
 - Declared the missing `amqplib` dependency (the app could not start on a clean install).
@@ -93,6 +93,7 @@ Useful commands:
 npm run smoke         # end-to-end test (needs `docker compose up -d mysql rabbitmq` and `npm run build`)
 npm run test:ci       # unit tests with coverage
 npm run lint:check
+npm run arch:check    # layering rules (dependency-cruiser)
 npm run typecheck
 ```
 
