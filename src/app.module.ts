@@ -32,6 +32,11 @@ import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase
 import { GetSubscriberStatusUseCase } from './application/use-cases/GetSubscriberStatusUseCase';
 import { PciConcursosScrapper } from './infrastructure/scrapper/pciConcursosScrapper';
 import { DlqMonitorService } from './infrastructure/monitoring/DlqMonitorService';
+import {
+  rabbitMqUrl,
+  vacancyQueueName,
+  vacancyQueueOptions,
+} from './infrastructure/messaging/rabbitmq.config';
 
 @Module({
   imports: [
@@ -75,11 +80,9 @@ import { DlqMonitorService } from './infrastructure/monitoring/DlqMonitorService
         name: 'RABBITMQ_CLIENT',
         transport: Transport.RMQ,
         options: {
-          urls: [
-            process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
-          ],
-          queue: process.env.RABBITMQ_QUEUE || 'concursos.new',
-          queueOptions: { durable: true },
+          urls: [rabbitMqUrl()],
+          queue: vacancyQueueName(),
+          queueOptions: vacancyQueueOptions,
         },
       },
     ]),
