@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { StripeEventOrmEntity } from '../../../domain/entities/StripeEventOrmEntity';
+import { StripeEventOrmEntity } from '../entities/stripe-event.orm-entity';
 import {
   EventDecision,
   IProcessedEventRepository,

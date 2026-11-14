@@ -1,4 +1,3 @@
-import { Inject } from '@nestjs/common';
 import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 
 export interface PreferenceStatus {
@@ -14,10 +13,7 @@ export interface SubscriberStatus {
 }
 
 export class GetSubscriberStatusUseCase {
-  constructor(
-    @Inject('ISubscriberRepository')
-    private readonly subscriberRepository: ISubscriberRepository,
-  ) {}
+  constructor(private readonly subscriberRepository: ISubscriberRepository) {}
 
   async execute(telegramId: string): Promise<SubscriberStatus> {
     const subscriber =

@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
-import { PreferenceOrmEntity } from './PreferenceOrmEntity';
+import { PreferenceOrmEntity } from './preference.orm-entity';
 
 @Entity('subscribers')
 export class SubscriberOrmEntity {

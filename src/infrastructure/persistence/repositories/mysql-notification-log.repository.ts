@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import {
   NotificationLogOrmEntity,
   NotificationStatus,
-} from '../../../domain/entities/NotificationLogOrmEntity';
+} from '../entities/notification-log.orm-entity';
 import {
   ClaimResult,
   INotificationLogRepository,
