@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { SubscriberOrmEntity } from './SubscriberOrmEntity';
+import { SubscriberOrmEntity } from './subscriber.orm-entity';
 
 @Entity('preferences') // Nome da tabela no MySQL
 export class PreferenceOrmEntity {

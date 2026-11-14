@@ -1,5 +1,5 @@
 import { getMetadataArgsStorage } from 'typeorm';
-import { NotificationLogOrmEntity } from './NotificationLogOrmEntity';
+import { NotificationLogOrmEntity } from './notification-log.orm-entity';
 
 describe('NotificationLogOrmEntity schema', () => {
   it('only declares unique constraints over columns that exist', () => {

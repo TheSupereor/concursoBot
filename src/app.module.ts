@@ -6,15 +6,15 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 // --- Entidades de Infraestrutura (ORM) ---
-import { SubscriberOrmEntity } from './domain/entities/SubscriberOrmEntity';
-import { PreferenceOrmEntity } from './domain/entities/PreferenceOrmEntity';
+import { SubscriberOrmEntity } from './infrastructure/persistence/entities/subscriber.orm-entity';
+import { PreferenceOrmEntity } from './infrastructure/persistence/entities/preference.orm-entity';
 
 // --- Adaptadores (Implementações Reais) ---
 import { TelegramNotificationService } from './infrastructure/telegram/telegram-notification.service';
 import { TelegramBotUpdate } from './infrastructure/telegram/telegram-bot.update';
 import { VacancyConsumer } from './infrastructure/messaging/vacancy.consumer';
-import { MysqlSubscriberRepository } from './infrastructure/database/repositories/MysqlAssinanteRepository';
-import { MysqlNotificationLogRepository } from './infrastructure/database/repositories/MysqlNotificationLogRepository';
+import { MysqlSubscriberRepository } from './infrastructure/persistence/repositories/mysql-subscriber.repository';
+import { MysqlNotificationLogRepository } from './infrastructure/persistence/repositories/mysql-notification-log.repository';
 import { ISubscriberRepository } from './domain/ports/subscriber-repository.port';
 
 // --- Casos de Uso (Aplicação) ---
@@ -22,9 +22,9 @@ import { NotifySubscriberUseCase } from './application/use-cases/notify-subscrib
 import { SignUpSubscriberUseCase } from './application/use-cases/sign-up-subscriber.use-case';
 import { RemovePreferenceUseCase } from './application/use-cases/remove-preference.use-case';
 import { AddPreferenceUseCase } from './application/use-cases/add-preference.use-case';
-import { NotificationLogOrmEntity } from './domain/entities/NotificationLogOrmEntity';
-import { StripeEventOrmEntity } from './domain/entities/StripeEventOrmEntity';
-import { MysqlProcessedEventRepository } from './infrastructure/database/repositories/MysqlProcessedEventRepository';
+import { NotificationLogOrmEntity } from './infrastructure/persistence/entities/notification-log.orm-entity';
+import { StripeEventOrmEntity } from './infrastructure/persistence/entities/stripe-event.orm-entity';
+import { MysqlProcessedEventRepository } from './infrastructure/persistence/repositories/mysql-processed-event.repository';
 import { ProcessApprovedPaymentUseCase } from './application/use-cases/process-approved-payment.use-case';
 import { CancelSubscriptionUseCase } from './application/use-cases/cancel-subscription.use-case';
 
