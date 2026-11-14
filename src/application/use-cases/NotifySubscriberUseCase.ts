@@ -13,61 +13,79 @@ export class NotifySubscriberUseCase {
     private readonly notificationLogRepository: INotificationLogRepository,
   ) {}
 
-  // execute/handle is the main entry
+  /**
+   * Delivers a vacancy to every interested subscriber exactly once.
+   *
+   * Each subscriber is claimed before delivery (claim-first), so concurrent consumers and
+   * redelivered messages cannot send duplicates. Throws RetryableDeliveryError when some
+   * subscribers could not be served yet, so the message is retried instead of acknowledged.
+   */
   async execute(newVacancy: Vacancy): Promise<void> {
-    // look for active subscribers
     const activeSubscribers =
       await this.subscriberRepository.searchActiveSubscribers();
 
-    let retryableFailures = 0;
+    let pendingRetries = 0;
 
-    // for each subscriver, he leaves the decision to the business Rules (domain)
     for (const subscriber of activeSubscribers) {
-      const hasInterest = subscriber.hasInterest(newVacancy);
-      if (hasInterest) {
-        const alreadySent = await this.notificationLogRepository.alreadySent(
-          subscriber.telegramId,
-          newVacancy.id,
-        );
+      // The business rule for "is this subscriber interested" lives in the domain.
+      if (!subscriber.hasInterest(newVacancy)) continue;
 
-        if (alreadySent) {
-          console.log(
-            `[Idempotência] Vaga ${newVacancy.id} já enviada para ${subscriber.telegramId}. Pulando...`,
-          );
-          continue; // Pula para a próxima pessoa da fila
-        }
+      const { telegramId } = subscriber;
+      const claim = await this.notificationLogRepository.claim(
+        telegramId,
+        newVacancy.id,
+      );
 
-        const result = await this.notificationService.sendVacancyAlert(
+      if (claim === 'already_handled') continue;
+
+      if (claim === 'in_progress') {
+        // Another worker owns this delivery; do not acknowledge until it is settled.
+        pendingRetries++;
+        continue;
+      }
+
+      let result;
+      try {
+        result = await this.notificationService.sendVacancyAlert(
           subscriber,
           newVacancy,
         );
+      } catch (error) {
+        await this.notificationLogRepository.release(telegramId, newVacancy.id);
+        throw error;
+      }
 
-        switch (result.status) {
-          case 'sent':
-            await this.notificationLogRepository.registerSent(
-              subscriber.telegramId,
-              newVacancy.id,
-            );
-            break;
-          case 'retryable':
-            // Do not log as sent: the whole message is retried and already-sent
-            // subscribers are skipped through the notification log.
-            retryableFailures++;
-            break;
-          case 'blocked':
-          case 'invalid':
-            // Retrying cannot help; skip so one bad recipient never blocks the others.
-            // TODO(phase 2): replace console.* with a logger port.
-            console.warn(
-              `Skipping vacancy ${newVacancy.id} for ${subscriber.telegramId}: delivery ${result.status}`,
-            );
-            break;
-        }
+      switch (result.status) {
+        case 'sent':
+          await this.notificationLogRepository.markSent(
+            telegramId,
+            newVacancy.id,
+          );
+          break;
+        case 'retryable':
+          await this.notificationLogRepository.release(
+            telegramId,
+            newVacancy.id,
+          );
+          pendingRetries++;
+          break;
+        case 'blocked':
+        case 'invalid':
+          // Retrying cannot help; record it so one bad recipient never blocks the others.
+          await this.notificationLogRepository.markFailed(
+            telegramId,
+            newVacancy.id,
+          );
+          // TODO(phase 2): replace console.* with a logger port.
+          console.warn(
+            `Skipping vacancy ${newVacancy.id} for ${telegramId}: delivery ${result.status}`,
+          );
+          break;
       }
     }
 
-    if (retryableFailures > 0) {
-      throw new RetryableDeliveryError(newVacancy.id, retryableFailures);
+    if (pendingRetries > 0) {
+      throw new RetryableDeliveryError(newVacancy.id, pendingRetries);
     }
   }
 }
