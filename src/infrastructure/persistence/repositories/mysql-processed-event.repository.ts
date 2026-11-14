@@ -28,7 +28,7 @@ export class MysqlProcessedEventRepository implements IProcessedEventRepository 
       });
       return 'process';
     } catch (error) {
-      if ((error as { code?: string })?.code !== MYSQL_DUPLICATE_ENTRY) {
+      if ((error as { code?: string }).code !== MYSQL_DUPLICATE_ENTRY) {
         throw error;
       }
     }

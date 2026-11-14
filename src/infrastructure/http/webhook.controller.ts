@@ -39,6 +39,12 @@ export class WebhookController {
     @Headers('stripe-signature') signature: string,
     @Res() res: Response,
   ) {
+    if (!req.rawBody) {
+      // Without the raw body the signature cannot be verified (misconfigured body parser).
+      this.logger.error('Webhook received without a raw body');
+      return res.status(HttpStatus.BAD_REQUEST).send('Webhook Error');
+    }
+
     let event: StripeEvent;
 
     try {
@@ -49,7 +55,9 @@ export class WebhookController {
         this.config.stripe.webhookSecret,
       );
     } catch (error) {
-      this.logger.warn(`Webhook signature verification failed: ${error}`);
+      this.logger.warn(
+        `Webhook signature verification failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
       return res.status(HttpStatus.BAD_REQUEST).send('Webhook Error');
     }
 
@@ -86,7 +94,7 @@ export class WebhookController {
 
     if (event.type === 'customer.subscription.deleted') {
       // The id comes from subscription_data.metadata set at checkout.
-      const telegramId = event.data.object.metadata?.telegramId;
+      const telegramId = event.data.object.metadata.telegramId;
       if (telegramId) {
         await this.cancelSubscriptionUseCase.execute(telegramId);
       }

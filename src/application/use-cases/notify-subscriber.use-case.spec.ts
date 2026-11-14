@@ -11,6 +11,7 @@ import {
 } from '../../domain/ports/notification-log-repository.port';
 import { Preference } from '../../domain/value-objects/preference';
 import { Salary } from '../../domain/value-objects/salary';
+import { ILogger } from '../ports/logger.port';
 import { NotifySubscriberUseCase } from './notify-subscriber.use-case';
 import { RetryableDeliveryError } from '../errors/retryable-delivery.error';
 
@@ -58,6 +59,7 @@ describe('NotifySubscriberUseCase', () => {
   let subscribers: jest.Mocked<ISubscriberRepository>;
   let notifier: jest.Mocked<INotificationService>;
   let log: InMemoryNotificationLog;
+  let logger: jest.Mocked<ILogger>;
   let useCase: NotifySubscriberUseCase;
   const vacancy = new Vacancy('vaga-1', 'Dev', 'TI', 'SP', new Salary(8000));
 
@@ -75,7 +77,8 @@ describe('NotifySubscriberUseCase', () => {
       sendCustomAlert: jest.fn().mockResolvedValue({ status: 'sent' }),
     };
     log = new InMemoryNotificationLog();
-    useCase = new NotifySubscriberUseCase(subscribers, notifier, log);
+    logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+    useCase = new NotifySubscriberUseCase(subscribers, notifier, log, logger);
   });
 
   it('notifies only the subscribers interested in the vacancy', async () => {
@@ -201,6 +204,9 @@ describe('NotifySubscriberUseCase', () => {
         await useCase.execute(vacancy);
 
         expect(log.entries.get('telegram-1:vaga-1')).toBe('FAILED');
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining('telegram-1'),
+        );
         expect(notifier.sendVacancyAlert).toHaveBeenCalledTimes(1);
       },
     );

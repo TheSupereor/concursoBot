@@ -25,7 +25,7 @@ describe('SubscriberMapper', () => {
     expect(subscriber.telegramId).toBe('42');
     expect(subscriber.isActive).toBe(true);
     expect(subscriber.getPreferences()).toHaveLength(1);
-    expect(subscriber.getPreferences()[0].minimumSalary.value).toBe(3500);
+    expect(subscriber.getPreferences()[0]?.minimumSalary.value).toBe(3500);
   });
 
   it('tolerates a row loaded without its preferences relation', () => {
@@ -45,7 +45,7 @@ describe('SubscriberMapper', () => {
     expect(orm.telegramId).toBe('7');
     expect(orm.isActive).toBe(false);
     expect(orm.preferences).toHaveLength(1);
-    expect(orm.preferences[0]).toMatchObject({
+    expect(orm.preferences?.[0]).toMatchObject({
       area: 'SAUDE',
       region: 'BR',
       minimumSalary: 0,

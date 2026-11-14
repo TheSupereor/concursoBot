@@ -1,3 +1,4 @@
+import { silentLogger } from '../../shared/testing/silent-logger';
 import { Subscriber } from '../../domain/entities/subscriber';
 import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 import { SignUpSubscriberUseCase } from './sign-up-subscriber.use-case';
@@ -20,17 +21,21 @@ describe('SignUpSubscriberUseCase', () => {
   });
 
   it('registers new users as inactive until a payment activates them', async () => {
-    await new SignUpSubscriberUseCase(repository).execute('telegram-1');
+    await new SignUpSubscriberUseCase(repository, silentLogger).execute(
+      'telegram-1',
+    );
 
     expect(saved).toHaveLength(1);
-    expect(saved[0].telegramId).toBe('telegram-1');
-    expect(saved[0].isActive).toBe(false);
+    expect(saved[0]?.telegramId).toBe('telegram-1');
+    expect(saved[0]?.isActive).toBe(false);
   });
 
   it('does not touch an existing subscriber', async () => {
     existing = new Subscriber('telegram-1', true);
 
-    await new SignUpSubscriberUseCase(repository).execute('telegram-1');
+    await new SignUpSubscriberUseCase(repository, silentLogger).execute(
+      'telegram-1',
+    );
 
     expect(saved).toHaveLength(0);
     expect(existing.isActive).toBe(true);

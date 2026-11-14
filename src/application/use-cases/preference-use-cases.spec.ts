@@ -31,7 +31,7 @@ describe('preference use cases', () => {
 
       const [pref] = subscriber!.getPreferences();
       expect(pref).toMatchObject({ area: 'TI', region: 'BR' });
-      expect(pref.minimumSalary.value).toBe(0);
+      expect(pref?.minimumSalary.value).toBe(0);
       expect(repository.save).toHaveBeenCalledWith(subscriber);
     });
 

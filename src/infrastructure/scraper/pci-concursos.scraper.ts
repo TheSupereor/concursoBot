@@ -18,7 +18,7 @@ export class PciConcursosScraper {
     this.logger.log('Iniciando captura de novos concursos.');
 
     try {
-      const { data: html } = await axios.get(
+      const { data: html } = await axios.get<string>(
         'https://www.pciconcursos.com.br/concursos/sudeste/',
       );
       const $ = cheerio.load(html);

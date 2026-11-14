@@ -1,3 +1,4 @@
+import { ILogger } from '../ports/logger.port';
 import { SubscriberNotFoundError } from '../errors/subscriber-not-found.error';
 import { INotificationService } from '../../domain/ports/notification-service.port';
 import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
@@ -6,6 +7,7 @@ export class ProcessApprovedPaymentUseCase {
   constructor(
     private readonly subscriberRepository: ISubscriberRepository,
     private readonly notificationService: INotificationService,
+    private readonly logger: ILogger,
   ) {}
 
   async execute(telegramId: string): Promise<void> {
@@ -25,6 +27,6 @@ export class ProcessApprovedPaymentUseCase {
       subscriber,
       `Assinatura ativada com sucesso!`,
     );
-    console.log(`[Pagamento] Assinatura ativada para o usuário ${telegramId}`);
+    this.logger.info(`Subscription activated for ${telegramId}`);
   }
 }

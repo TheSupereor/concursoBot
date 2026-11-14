@@ -3,6 +3,7 @@ import { NotifySubscriberUseCase } from '../application/use-cases/notify-subscri
 import { VacancyConsumer } from '../infrastructure/messaging/vacancy.consumer';
 import { provideUseCase } from '../shared/provide-use-case';
 import {
+  LOGGER,
   NOTIFICATION_LOG_REPOSITORY,
   NOTIFICATION_SERVICE,
   SUBSCRIBER_REPOSITORY,
@@ -18,6 +19,7 @@ import { TelegramModule } from './telegram.module';
       SUBSCRIBER_REPOSITORY,
       NOTIFICATION_SERVICE,
       NOTIFICATION_LOG_REPOSITORY,
+      LOGGER,
     ]),
   ],
   controllers: [VacancyConsumer],

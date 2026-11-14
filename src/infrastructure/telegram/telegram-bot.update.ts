@@ -19,6 +19,9 @@ import {
 } from '../../shared/tokens';
 import { buildCheckoutSessionParams } from '../billing/checkout-session';
 
+/** Updates without a sender (for example channel posts) cannot be attributed to a subscriber. */
+const senderId = (ctx: Context): string | undefined => ctx.from?.id.toString();
+
 @Update()
 export class TelegramBotUpdate {
   private readonly logger = new Logger(TelegramBotUpdate.name);
@@ -36,8 +39,9 @@ export class TelegramBotUpdate {
 
   @Start()
   async onStart(@Ctx() ctx: Context) {
-    const telegramId = ctx.from.id.toString();
-    const nome = ctx.from.first_name;
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
+    const nome = ctx.from?.first_name ?? '';
 
     try {
       await this.signUpSubscriberUseCase.execute(telegramId);
@@ -48,7 +52,7 @@ export class TelegramBotUpdate {
           `Para começar, use o comando /filtros para me dizer quais vagas você está buscando.`,
       );
     } catch (error) {
-      console.error('Erro ao processar /start', error);
+      this.logger.error('Failed to handle /start', error);
       await ctx.reply(
         'Ops, tive um problema interno. Tente novamente em alguns minutos.',
       );
@@ -57,7 +61,8 @@ export class TelegramBotUpdate {
 
   @Command('status')
   async onStatus(@Ctx() ctx: Context) {
-    const telegramId = ctx.from.id.toString();
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
 
     try {
       const status = await this.getSubscriberStatusUseCase.execute(telegramId);
@@ -105,7 +110,7 @@ export class TelegramBotUpdate {
 
       await ctx.reply(message, { parse_mode: 'Markdown' });
     } catch (error) {
-      console.error('Erro ao buscar status', error);
+      this.logger.error('Failed to load the subscriber status', error);
       await ctx.reply(
         'Não consegui carregar seu status agora. Tente novamente.',
       );
@@ -136,7 +141,7 @@ export class TelegramBotUpdate {
 
   @Action(new RegExp(`^add_area_(${AREAS.join('|')})$`))
   async onSelectedArea(@Ctx() ctx: Context & { match: RegExpExecArray }) {
-    const selectedArea = ctx.match[1];
+    const [, selectedArea] = ctx.match;
 
     await ctx.answerCbQuery();
 
@@ -165,7 +170,10 @@ export class TelegramBotUpdate {
 
     await ctx.reply(
       `Área *${selectedArea}* selecionada. Agora escolha a região:`,
-      { parse_mode: 'Markdown', ...regionKeyboard },
+      {
+        parse_mode: 'Markdown',
+        reply_markup: regionKeyboard.reply_markup,
+      },
     );
   }
 
@@ -173,9 +181,10 @@ export class TelegramBotUpdate {
     new RegExp(`^pick_region:(${AREAS.join('|')}):(${REGIONS.join('|')})$`),
   )
   async onRegionSelected(@Ctx() ctx: Context & { match: RegExpExecArray }) {
-    const telegramId = ctx.from.id.toString();
-    const area = ctx.match[1];
-    const region = ctx.match[2];
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
+    const [, area, region] = ctx.match;
+    if (!area || !region) return;
 
     try {
       await this.addPreferenceUseCase.execute(telegramId, area, region);
@@ -194,7 +203,8 @@ export class TelegramBotUpdate {
 
   @Command('minhas_areas')
   async onMinhasAreas(@Ctx() ctx: Context) {
-    const telegramId = ctx.from.id.toString();
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
     const subscriber =
       await this.subscriberRepository.searchByTelegramId(telegramId);
 
@@ -228,9 +238,10 @@ export class TelegramBotUpdate {
   // 2. A Action que escuta o clique no botão de excluir
   @Action(new RegExp(`^del_pref:(${AREAS.join('|')}):(${REGIONS.join('|')})$`))
   async onAreaRemovida(@Ctx() ctx: Context & { match: RegExpExecArray }) {
-    const telegramId = ctx.from.id.toString();
-    const areaToRemove = ctx.match[1];
-    const regionToRemove = ctx.match[2];
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
+    const [, areaToRemove, regionToRemove] = ctx.match;
+    if (!areaToRemove || !regionToRemove) return;
 
     try {
       await this.removePreferenceUseCase.execute(
@@ -255,7 +266,8 @@ export class TelegramBotUpdate {
 
   @Command('assinar')
   async onAssinar(@Ctx() ctx: Context) {
-    const telegramId = ctx.from.id.toString();
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
 
     try {
       // Cria uma sessão de checkout no Stripe
@@ -275,7 +287,7 @@ export class TelegramBotUpdate {
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
-      console.error('Erro ao gerar link do Stripe:', error);
+      this.logger.error('Failed to create the Stripe checkout link', error);
       await ctx.reply(
         'Ops, não consegui gerar seu link de pagamento agora. Tente novamente mais tarde.',
       );
@@ -310,8 +322,10 @@ export class TelegramBotUpdate {
   // 2. A Action que captura o clique
   @Action(/set_salario_(\d+)/)
   async onSalaryDefine(@Ctx() ctx: Context & { match: RegExpExecArray }) {
-    const telegramId = ctx.from.id.toString();
-    const valorEscolhido = parseInt(ctx.match[1], 10); // Extrai o número do callback
+    const telegramId = senderId(ctx);
+    if (!telegramId) return;
+    const valorEscolhido = parseInt(ctx.match[1] ?? '', 10);
+    if (Number.isNaN(valorEscolhido)) return;
 
     try {
       await this.defineSalaryUseCase.execute(telegramId, valorEscolhido);

@@ -8,3 +8,4 @@ export const NOTIFICATION_LOG_REPOSITORY = 'INotificationLogRepository';
 export const PROCESSED_EVENT_REPOSITORY = 'IProcessedEventRepository';
 
 export const RABBITMQ_CLIENT = 'RABBITMQ_CLIENT';
+export const LOGGER = 'ILogger';

@@ -1,65 +1,94 @@
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
+import { z } from 'zod';
 import { NotifySubscriberUseCase } from '../../application/use-cases/notify-subscriber.use-case';
 import { Vacancy } from '../../domain/entities/vacancy';
 import { Salary } from '../../domain/value-objects/salary';
 
+const MAX_ATTEMPTS = 3;
+const DEFAULT_BASE_DELAY_MS = 2000;
+
+/** Shape of a vacancy message published by the scrapers. */
+const vacancyMessageSchema = z.object({
+  id: z.string().min(1),
+  job: z.string(),
+  area: z.string(),
+  region: z.string(),
+  salary: z.number().min(0),
+});
+
+interface RabbitChannel {
+  ack(message: unknown): void;
+  nack(message: unknown, allUpTo: boolean, requeue: boolean): void;
+}
+
 @Controller()
 export class VacancyConsumer {
   private readonly logger = new Logger(VacancyConsumer.name);
-  private readonly MAX_RETRIES = 3;
 
-  constructor(private readonly notifyUseCase: NotifySubscriberUseCase) {}
+  constructor(
+    private readonly notifyUseCase: NotifySubscriberUseCase,
+    // Base delay of the exponential backoff (2s, 4s). Overridable so tests do not wait.
+    private readonly baseDelayMs: number = DEFAULT_BASE_DELAY_MS,
+  ) {}
 
   @EventPattern('concursos.new')
-  async handleNewVacancy(@Payload() data: any, @Ctx() context: RmqContext) {
-    const channel = context.getChannelRef();
-    const originalMsg = context.getMessage();
+  async handleNewVacancy(
+    @Payload() payload: unknown,
+    @Ctx() context: RmqContext,
+  ): Promise<void> {
+    const channel = context.getChannelRef() as RabbitChannel;
+    const message = context.getMessage() as unknown;
 
-    console.log(`[RabbitMqQ]: Nova vaga recebida: ${data.job}`);
-    for (let tentativa = 1; tentativa <= this.MAX_RETRIES; tentativa++) {
+    const parsed = vacancyMessageSchema.safeParse(payload);
+    if (!parsed.success) {
+      // A malformed message will never succeed: dead-letter it right away instead of retrying.
+      this.logger.error(
+        `Malformed vacancy message, sending it to the DLQ: ${parsed.error.issues
+          .map((issue) => issue.path.join('.') || 'payload')
+          .join(', ')}`,
+      );
+      channel.nack(message, false, false);
+      return;
+    }
+
+    const data = parsed.data;
+    this.logger.log(`New vacancy received: ${data.job}`);
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        const novaVaga = new Vacancy(
-          data.id,
-          data.job,
-          data.area,
-          data.region,
-          new Salary(data.salary),
+        await this.notifyUseCase.execute(
+          new Vacancy(
+            data.id,
+            data.job,
+            data.area,
+            data.region,
+            new Salary(data.salary),
+          ),
         );
-
-        // Tenta rodar o Caso de Uso
-        await this.notifyUseCase.execute(novaVaga);
-
-        // Se chegou aqui, deu certo! Confirmamos o sucesso e saímos do loop
-        channel.ack(originalMsg);
+        channel.ack(message);
         return;
       } catch (error) {
         this.logger.warn(
-          `[Tentativa ${tentativa}/${this.MAX_RETRIES}] Falha ao processar vaga ${data.id}: ${error}`,
+          `[Attempt ${attempt}/${MAX_ATTEMPTS}] Failed to process vacancy ${data.id}: ${errorMessage(error)}`,
         );
 
-        // Se ainda temos tentativas restantes, esperamos um tempo exponencial antes do próximo loop
-        if (tentativa < this.MAX_RETRIES) {
-          const tempoEspera = Math.pow(2, tentativa) * 1000; // 1ª vez: 2s | 2ª vez: 4s
-          this.logger.log(
-            `Aguardando ${tempoEspera / 1000}s para tentar novamente...`,
-          );
-          await this.sleep(tempoEspera);
-        } else {
-          // ESTRATÉGIA FINAL: Esgotaram as tentativas. Jogamos a toalha.
-          this.logger.error(
-            `🚨 Limite de retries atingido para a vaga ${data.id}. Movendo para a DLQ...`,
-          );
-
-          // Nack com requeue=false ativa a nossa configuração e manda para a 'concursos.dlq'
-          channel.nack(originalMsg, false, false);
+        if (attempt < MAX_ATTEMPTS) {
+          await sleep(2 ** attempt * (this.baseDelayMs / 2));
         }
       }
     }
-  }
 
-  // Função auxiliar para pausar a execução
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    this.logger.error(
+      `Retry limit reached for vacancy ${data.id}; sending it to the DLQ`,
+    );
+    // requeue=false routes the message through the queue's dead-letter exchange to the DLQ.
+    channel.nack(message, false, false);
   }
 }
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'unknown error';
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
