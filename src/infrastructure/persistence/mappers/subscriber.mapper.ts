@@ -18,7 +18,7 @@ export class SubscriberMapper {
           preference.area,
           preference.region,
           // DECIMAL columns come back from MySQL as strings.
-          new Salary(Number(preference.minimunSalary)),
+          new Salary(Number(preference.minimumSalary)),
         ),
       );
     }
@@ -34,7 +34,7 @@ export class SubscriberMapper {
       const row = new PreferenceOrmEntity();
       row.area = preference.area;
       row.region = preference.region;
-      row.minimunSalary = preference.minimunSalary.value;
+      row.minimumSalary = preference.minimumSalary.value;
       return row;
     });
     return orm;

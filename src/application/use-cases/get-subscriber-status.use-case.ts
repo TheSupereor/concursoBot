@@ -29,7 +29,7 @@ export class GetSubscriberStatusUseCase {
       preferences: subscriber.getPreferences().map((pref) => ({
         area: pref.area,
         region: pref.region,
-        minimumSalary: pref.minimunSalary.value,
+        minimumSalary: pref.minimumSalary.value,
       })),
     };
   }

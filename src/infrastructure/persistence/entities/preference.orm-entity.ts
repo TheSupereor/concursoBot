@@ -13,8 +13,10 @@ export class PreferenceOrmEntity {
   region: string;
 
   // Usamos 'decimal' para dinheiro para evitar erros de arredondamento que o 'float' tem
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  minimunSalary: number;
+  // The column keeps its historical (misspelled) name so existing databases are untouched;
+  // the property was renamed. A migration can rename the column later.
+  @Column({ name: 'minimunSalary', type: 'decimal', precision: 10, scale: 2 })
+  minimumSalary: number;
 
   // Relacionamento: Muitas preferências pertencem a UM assinante
   @ManyToOne(() => SubscriberOrmEntity, (subscriber) => subscriber.preferences)

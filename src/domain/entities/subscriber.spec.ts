@@ -1,118 +1,162 @@
+import {
+  DuplicatePreferenceError,
+  NoPreferencesError,
+  PreferenceLimitReachedError,
+} from '../errors/domain.error';
+import { AREAS } from '../value-objects/area';
 import { Preference } from '../value-objects/preference';
 import { Salary } from '../value-objects/salary';
-import { Subscriber } from './subscriber';
+import { MAX_PREFERENCES, Subscriber } from './subscriber';
 import { Vacancy } from './vacancy';
 
+const preference = (area: string, region = 'SP', salary = 0) =>
+  new Preference(area, region, new Salary(salary));
+
 describe('Entity: Subscriber', () => {
-  describe('Preference Management', () => {
-    it('should allow add preferences until 5', () => {
-      const subscriber = new Subscriber('telegram-123');
-
-      for (let i = 0; i < 5; i++) {
-        subscriber.addPreference(
-          new Preference(`Area ${i}`, 'SP', new Salary(1000)),
-        );
-      }
-
-      expect(subscriber.getPreferences().length).toBe(5);
+  describe('subscription state', () => {
+    it('starts inactive unless told otherwise', () => {
+      expect(new Subscriber('1').isActive).toBe(false);
     });
 
-    it('should block the adition of sixth preference', () => {
-      const subscriber = new Subscriber('telegram-123');
+    it('is activated and cancelled through domain methods', () => {
+      const subscriber = new Subscriber('1');
 
-      for (let i = 0; i < 5; i++) {
-        subscriber.addPreference(
-          new Preference(`Area ${i}`, 'SP', new Salary(1000)),
-        );
-      }
+      subscriber.activateSubscription();
+      expect(subscriber.isActive).toBe(true);
 
-      expect(() => {
-        subscriber.addPreference(new Preference('TI', 'RJ', new Salary(5000)));
-      }).toThrow('Limite de preferências atingido.'); //TODO: change to error code
+      subscriber.cancelSubscription();
+      expect(subscriber.isActive).toBe(false);
     });
   });
 
-  describe('Business Rule: Vacancy Match (hasInterest)', () => {
+  describe('preference management', () => {
+    it(`allows up to ${MAX_PREFERENCES} preferences`, () => {
+      const subscriber = new Subscriber('1');
+
+      for (const area of AREAS.slice(0, MAX_PREFERENCES)) {
+        subscriber.addPreference(preference(area));
+      }
+
+      expect(subscriber.getPreferences()).toHaveLength(MAX_PREFERENCES);
+    });
+
+    it('blocks the preference beyond the limit with a typed error', () => {
+      const subscriber = new Subscriber('1');
+      for (const area of AREAS.slice(0, MAX_PREFERENCES)) {
+        subscriber.addPreference(preference(area));
+      }
+
+      expect(() => subscriber.addPreference(preference('TI', 'RJ'))).toThrow(
+        PreferenceLimitReachedError,
+      );
+    });
+
+    it('rejects the same area and region twice, but allows another region', () => {
+      const subscriber = new Subscriber('1');
+      subscriber.addPreference(preference('TI', 'SP'));
+
+      expect(() =>
+        subscriber.addPreference(preference('TI', 'SP', 9000)),
+      ).toThrow(DuplicatePreferenceError);
+
+      subscriber.addPreference(preference('TI', 'RJ'));
+      expect(subscriber.getPreferences()).toHaveLength(2);
+    });
+
+    it('removes only the preference with the given area and region', () => {
+      const subscriber = new Subscriber('1');
+      subscriber.addPreference(preference('TI', 'SP'));
+      subscriber.addPreference(preference('TI', 'RJ'));
+
+      subscriber.removePreference('TI', 'SP');
+
+      const left = subscriber.getPreferences();
+      expect(left).toHaveLength(1);
+      expect(left[0].region).toBe('RJ');
+    });
+
+    it('does not expose its internal list', () => {
+      const subscriber = new Subscriber('1');
+      subscriber.addPreference(preference('TI'));
+
+      subscriber.getPreferences().pop();
+
+      expect(subscriber.getPreferences()).toHaveLength(1);
+    });
+  });
+
+  describe('minimum salary', () => {
+    it('applies the new minimum to every preference without mutating old ones', () => {
+      const subscriber = new Subscriber('1');
+      subscriber.addPreference(preference('TI', 'SP', 1000));
+      subscriber.addPreference(preference('SAUDE', 'RJ', 2000));
+      const before = subscriber.getPreferences();
+
+      subscriber.applyMinimumSalary(new Salary(7000));
+
+      expect(
+        subscriber.getPreferences().map((p) => p.minimumSalary.value),
+      ).toEqual([7000, 7000]);
+      expect(before.map((p) => p.minimumSalary.value)).toEqual([1000, 2000]);
+    });
+
+    it('requires at least one preference', () => {
+      expect(() =>
+        new Subscriber('1').applyMinimumSalary(new Salary(5000)),
+      ).toThrow(NoPreferencesError);
+    });
+  });
+
+  describe('vacancy matching (hasInterest)', () => {
     let subscriber: Subscriber;
+    const vacancy = (area: string, region: string, salary: number) =>
+      new Vacancy('v1', 'Role', area, region, new Salary(salary));
 
     beforeEach(() => {
-      subscriber = new Subscriber('telegram-123', true);
+      subscriber = new Subscriber('1', true);
     });
 
-    it('should not have interest if subscriber is inactive', () => {
-      const inactiveSubscriber = new Subscriber('telgram-456', false);
-      inactiveSubscriber.addPreference(
-        new Preference('TI', 'SP', new Salary(5000)),
-      );
+    it('has no interest when inactive', () => {
+      const inactive = new Subscriber('2', false);
+      inactive.addPreference(preference('TI', 'SP', 5000));
 
-      const vacancy = new Vacancy('1', 'Dev', 'TI', 'SP', new Salary(6000));
-
-      expect(inactiveSubscriber.hasInterest(vacancy)).toBe(false);
+      expect(inactive.hasInterest(vacancy('TI', 'SP', 6000))).toBe(false);
     });
 
-    it('não deve ter interesse se não tiver nenhuma preferência cadastrada', () => {
-      const vacancy = new Vacancy('1', 'Dev', 'TI', 'SP', new Salary(6000));
-      // Assinante não tem preferências adicionadas
-      expect(subscriber.hasInterest(vacancy)).toBe(false);
+    it('has no interest without preferences', () => {
+      expect(subscriber.hasInterest(vacancy('TI', 'SP', 6000))).toBe(false);
     });
 
-    it('deve ter interesse quando área, região baterem e salário for maior', () => {
-      subscriber.addPreference(new Preference('TI', 'SP', new Salary(5000)));
-      const vagaBoa = new Vacancy(
-        '1',
-        'Engenheiro de Software',
-        'TI',
-        'SP',
-        new Salary(8000),
-      );
+    it('matches when area and region match and the salary is high enough', () => {
+      subscriber.addPreference(preference('TI', 'SP', 5000));
 
-      expect(subscriber.hasInterest(vagaBoa)).toBe(true);
+      expect(subscriber.hasInterest(vacancy('TI', 'SP', 8000))).toBe(true);
     });
 
-    it('não deve ter interesse se o salário da Vacancy for menor que o desejado', () => {
-      subscriber.addPreference(new Preference('TI', 'SP', new Salary(10000)));
-      const vagaJunior = new Vacancy(
-        '1',
-        'Suporte',
-        'TI',
-        'SP',
-        new Salary(3000),
-      );
+    it('does not match when the salary is below the minimum', () => {
+      subscriber.addPreference(preference('TI', 'SP', 10000));
 
-      expect(subscriber.hasInterest(vagaJunior)).toBe(false);
+      expect(subscriber.hasInterest(vacancy('TI', 'SP', 3000))).toBe(false);
     });
 
-    it('deve ter interesse se a preferência de região for BR (Nacional)', () => {
-      // O subscriber aceita TI em qualquer lugar do Brasil
-      subscriber.addPreference(new Preference('TI', 'BR', new Salary(5000)));
+    it('matches any region for a national (BR) preference', () => {
+      subscriber.addPreference(preference('TI', 'BR', 5000));
 
-      const vagaNoAcre = new Vacancy(
-        '1',
-        'Analista',
-        'TI',
-        'AC',
-        new Salary(6000),
-      );
-      const vagaNoSul = new Vacancy(
-        '2',
-        'Analista',
-        'TI',
-        'RS',
-        new Salary(6000),
-      );
-
-      expect(subscriber.hasInterest(vagaNoAcre)).toBe(true);
-      expect(subscriber.hasInterest(vagaNoSul)).toBe(true);
+      expect(subscriber.hasInterest(vacancy('TI', 'AC', 6000))).toBe(true);
+      expect(subscriber.hasInterest(vacancy('TI', 'RS', 6000))).toBe(true);
     });
 
-    it('deve ter interesse se QUALQUER uma das preferências bater (OR logic)', () => {
-      subscriber.addPreference(new Preference('Saúde', 'RJ', new Salary(5000)));
-      subscriber.addPreference(new Preference('TI', 'SP', new Salary(8000)));
+    it('matches any area for a QUALQUER preference', () => {
+      subscriber.addPreference(preference('QUALQUER', 'SP'));
 
-      // A Vacancy não bate com Saúde, mas bate com a de TI
-      const vagaTI = new Vacancy('1', 'Dev', 'TI', 'SP', new Salary(9000));
+      expect(subscriber.hasInterest(vacancy('SAUDE', 'SP', 1000))).toBe(true);
+    });
 
-      expect(subscriber.hasInterest(vagaTI)).toBe(true);
+    it('matches when any one preference matches', () => {
+      subscriber.addPreference(preference('SAUDE', 'RJ', 5000));
+      subscriber.addPreference(preference('TI', 'SP', 8000));
+
+      expect(subscriber.hasInterest(vacancy('TI', 'SP', 9000))).toBe(true);
     });
   });
 });
