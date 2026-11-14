@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "test:ci": "jest --ci --coverage",
     "prepare": "husky",
-    "smoke": "node scripts/smoke-test.js"
+    "smoke": "node scripts/smoke-test.js",
+    "arch:check": "depcruise src --config .dependency-cruiser.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -58,6 +59,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "dependency-cruiser": "^18.7.2",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
