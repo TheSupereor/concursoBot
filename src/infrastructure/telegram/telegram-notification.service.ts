@@ -1,36 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import Bottleneck from 'bottleneck';
+import { InjectBot } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { Vacancy } from '../../domain/entities/vacancy';
 import {
   DeliveryResult,
   INotificationService,
 } from '../../domain/ports/notification-service.port';
 import { classifyTelegramError } from './telegram-delivery';
 import { formatVacancyAlert } from './telegram-format';
-import { Subscriber } from '../../domain/entities/subscriber';
-import { Vacancy } from '../../domain/entities/vacancy';
-import axios from 'axios';
-import Bottleneck from 'bottleneck';
 
 @Injectable()
 export class TelegramNotificationService implements INotificationService {
-  private readonly botToken = process.env.TELEGRAM_BOT_TOKEN;
+  private readonly logger = new Logger(TelegramNotificationService.name);
   private readonly limiter: Bottleneck;
 
-  constructor() {
-    // Configurando a "Catraca" (Rate Limiter)
-    this.limiter = new Bottleneck({
-      // O Telegram aceita ~30 mensagens por segundo.
-      // 1000ms / 30 = ~33.3ms. Colocamos 35ms por segurança.
-      // Isso garante que NUNCA faremos requisições mais rápido que 1 a cada 35 milissegundos.
-      minTime: 35,
-
-      // Quantas requisições simultâneas podemos abrir?
-      maxConcurrent: 1,
-    });
-
-    // Opcional: Escutar eventos de gargalo para monitoramento
-    this.limiter.on('dropped', () =>
-      console.warn('[Telegram] Requisição dropada pelo limiter!'),
-    );
+  constructor(@InjectBot() private readonly bot: Telegraf) {
+    // Telegram accepts about 30 messages per second. One request every 35ms, one at a
+    // time, keeps us safely under that limit even when thousands of alerts queue up.
+    this.limiter = new Bottleneck({ minTime: 35, maxConcurrent: 1 });
   }
 
   async sendVacancyAlert(
@@ -54,8 +43,8 @@ export class TelegramNotificationService implements INotificationService {
 
   /**
    * Sends one message through the rate limiter and reports the outcome instead of throwing,
-   * so callers can decide whether to retry. Errors are logged by status only: the raw axios
-   * error embeds the request URL, which contains the bot token.
+   * so callers can decide whether to retry. Only the outcome is logged: transport errors can
+   * embed the request URL, which contains the bot token.
    */
   private async deliver(
     chatId: string,
@@ -63,22 +52,17 @@ export class TelegramNotificationService implements INotificationService {
     parseMode?: 'HTML',
   ): Promise<DeliveryResult> {
     try {
-      // Bottleneck queues requests and releases one every 35ms.
       await this.limiter.schedule(() =>
-        axios.post(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
-          chat_id: chatId,
+        this.bot.telegram.sendMessage(
+          chatId,
           text,
-          ...(parseMode ? { parse_mode: parseMode } : {}),
-        }),
+          parseMode ? { parse_mode: parseMode } : undefined,
+        ),
       );
       return { status: 'sent' };
     } catch (error) {
       const result = classifyTelegramError(error);
-      const httpStatus = (error as { response?: { status?: number } })?.response
-        ?.status;
-      console.error(
-        `[Telegram] Delivery to ${chatId} failed (${result.status}, http ${httpStatus ?? 'n/a'})`,
-      );
+      this.logger.warn(`Delivery to ${chatId} failed (${result.status})`);
       return result;
     }
   }

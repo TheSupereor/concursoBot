@@ -30,6 +30,12 @@ npm run test:ci
 npm run build
 ```
 
+The end-to-end smoke test runs the real app against MySQL and RabbitMQ with a fake Telegram API:
+
+```bash
+docker compose up -d mysql rabbitmq && npm run build && npm run smoke
+```
+
 Git hooks (husky) format and lint staged files on commit and validate the commit message.
 
 ## Commit and PR conventions

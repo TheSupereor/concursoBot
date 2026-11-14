@@ -2,12 +2,6 @@ import * as amqp from 'amqplib';
 
 export const DEAD_LETTER_QUEUE = 'concursos.dlq';
 
-export const rabbitMqUrl = (): string =>
-  process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
-
-export const vacancyQueueName = (): string =>
-  process.env.RABBITMQ_QUEUE || 'concursos.new';
-
 /**
  * Single source of truth for the vacancy queue arguments. RabbitMQ rejects a queue
  * re-declaration with different arguments (PRECONDITION_FAILED), so the consumer and
@@ -34,8 +28,8 @@ export async function assertDeadLetterQueue(
   await channel.assertQueue(DEAD_LETTER_QUEUE, { durable: true });
 }
 
-export async function ensureDeadLetterQueue(): Promise<void> {
-  const connection = await amqp.connect(rabbitMqUrl());
+export async function ensureDeadLetterQueue(url: string): Promise<void> {
+  const connection = await amqp.connect(url);
   try {
     const channel = await connection.createChannel();
     await assertDeadLetterQueue(channel);
