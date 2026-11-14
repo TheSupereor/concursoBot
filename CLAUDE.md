@@ -14,108 +14,103 @@ Este arquivo orienta agentes de IA (Claude Code, Codex, Cursor, GPT Agents etc.)
 ### Princípios Arquiteturais
 
 1. Domínio isolado da infraestrutura
+   - Entidades e Value Objects não conhecem TypeORM, Telegram, Stripe ou RabbitMQ.
 
-   * Entidades e Value Objects não conhecem TypeORM, Telegram, Stripe ou RabbitMQ.
+   - O domínio expõe regras de negócio puras.
 
-   * O domínio expõe regras de negócio puras.
 2. Ports and Adapters
+   - Use Cases dependem de interfaces (ports).
 
-   * Use Cases dependem de interfaces (ports).
+   - Implementações concretas ficam na camada de infraestrutura.
 
-   * Implementações concretas ficam na camada de infraestrutura.
 3. Mensageria resiliente
+   - Toda integração assíncrona deve usar retry exponencial e DLQ.
 
-   * Toda integração assíncrona deve usar retry exponencial e DLQ.
+   - Nunca bloquear processamento por falha temporária externa.
 
-   * Nunca bloquear processamento por falha temporária externa.
 4. Idempotência obrigatória
+   - Nenhuma notificação pode ser enviada duas vezes para o mesmo usuário e vaga.
 
-   * Nenhuma notificação pode ser enviada duas vezes para o mesmo usuário e vaga.
+   - Webhooks do Stripe devem ser seguros contra duplicação de eventos.
 
-   * Webhooks do Stripe devem ser seguros contra duplicação de eventos.
+### Estrutura Atual
 
-### Estrutura Esperada
+Fonte de verdade: `docs/architecture.md` e os ADRs em `docs/adr`. As regras de camadas são verificadas por `npm run arch:check`.
 
 ```
 src/
-├── domain/
-│   ├── entities/          # Subscriber.ts, Vacancy.ts + ORM entities
-│   ├── ports/             # ISubscriberRepository, INotificationService, INotificationLogRepository
-│   └── value-objects/     # Salary.ts, Preference.ts
-├── application/
-│   └── use-cases/         # Um arquivo por caso de uso
-├── infrastructure/
-│   ├── database/repositories/   # MysqlSubscriberRepository, MysqlNotificationLogRepository
-│   ├── telegram/                # TelegramBotUpdate (entry), TelegramNotificationService (adapter)
-│   ├── http/                    # WebhookController (Stripe)
-│   ├── messaging/               # VacancyConsumer (RabbitMQ)
-│   └── scrapper/                # pciConcursosScrapper (cron)
+├── domain/            # entidades, value objects, erros de domínio e ports (sem imports externos)
+├── application/       # use cases (classes simples, sem framework) e a port ILogger
+├── infrastructure/    # adapters: persistence (TypeORM), telegram, billing/http (Stripe), messaging (RabbitMQ), scraper, monitoring
+├── modules/           # módulos NestJS que só fazem a ligação (wiring)
+├── shared/            # config tipada (zod), tokens de injeção, provideUseCase
 ├── app.module.ts
 └── main.ts
 ```
 
+Comandos: `npm run lint:check`, `npm run typecheck`, `npm run test:ci`, `npm run arch:check`, `npm run smoke` (ponta a ponta, precisa de MySQL e RabbitMQ).
+
 ### Regras de Código
 
 1. TypeScript
+   - Usar tipos explícitos sempre que possível.
 
-   * Usar tipos explícitos sempre que possível.
+   - Evitar any.
 
-   * Evitar any.
+   - Preferir readonly e imutabilidade.
 
-   * Preferir readonly e imutabilidade.
 2. NestJS
+   - Controllers apenas orquestram.
 
-   * Controllers apenas orquestram.
+   - Lógica de negócio deve ficar em Use Cases ou entidades.
 
-   * Lógica de negócio deve ficar em Use Cases ou entidades.
+   - Providers devem ser injetados via DI.
 
-   * Providers devem ser injetados via DI.
 3. DDD
+   - Regras de negócio pertencem às entidades e Value Objects.
 
-   * Regras de negócio pertencem às entidades e Value Objects.
+   - Use Cases coordenam operações.
 
-   * Use Cases coordenam operações.
+   - Repositories são abstrações do domínio.
 
-   * Repositories são abstrações do domínio.
 4. Banco de dados
+   - Usar migrations para mudanças estruturais.
 
-   * Usar migrations para mudanças estruturais.
-
-   * Nunca acessar o banco diretamente de Controllers.
+   - Nunca acessar o banco diretamente de Controllers.
 
 ### Regras de Mensageria (RabbitMQ)
 
-* Filas principais devem ter DLQ associada.
+- Filas principais devem ter DLQ associada.
 
-* Retries: máximo 3 tentativas.
+- Retries: máximo 3 tentativas.
 
-* Backoff exponencial: 2s, 4s, 8s.
+- Backoff exponencial: 2s, 4s, 8s.
 
-* Mensagens falhas devem ser roteadas para *.dlq.
+- Mensagens falhas devem ser roteadas para \*.dlq.
 
-* Consumidores devem ser idempotentes.
+- Consumidores devem ser idempotentes.
 
 Exemplo de filas:
 
 ### Regras de Notificação
 
-* Respeitar rate limiting do Telegram: 1 mensagem a cada 35ms.
+- Respeitar rate limiting do Telegram: 1 mensagem a cada 35ms.
 
-* Registrar envio em notification_logs.
+- Registrar envio em notification_logs.
 
-* Nunca enviar duplicado para o mesmo usuário e vaga.
+- Nunca enviar duplicado para o mesmo usuário e vaga.
 
-* Falhas temporárias devem acionar retry automático.
+- Falhas temporárias devem acionar retry automático.
 
 ### Regras de Pagamento (Stripe)
 
-* Sempre validar assinatura HMAC usando rawBody.
+- Sempre validar assinatura HMAC usando rawBody.
 
-* Ativar assinatura apenas em checkout.session.completed.
+- Ativar assinatura apenas em checkout.session.completed.
 
-* Desativar assinatura em customer.subscription.deleted.
+- Desativar assinatura em customer.subscription.deleted.
 
-* Webhooks devem ser idempotentes.
+- Webhooks devem ser idempotentes.
 
 ### Fluxos Principais
 
@@ -171,7 +166,7 @@ Pagamento aprovado
 
 1. Ler este arquivo antes de qualquer implementação.
 
-2. Consultar .ai/architecture/ para detalhes arquiteturais e .ai/decisions/ para entender o *porquê* das decisões.
+2. Consultar .ai/architecture/ para detalhes arquiteturais e .ai/decisions/ para entender o _porquê_ das decisões.
 
 3. Consultar .ai/domain/glossary.md para entender os termos do negócio antes de nomear variáveis ou métodos.
 
@@ -234,30 +229,29 @@ O CLAUDE.md vira o “contrato principal”, enquanto as skills detalham process
 Você não precisa começar perfeito. Uma boa evolução é:
 
 1. V1 — Básico (1 hora)
+   - Visão geral
 
-   * Visão geral
+   - Arquitetura
 
-   * Arquitetura
+   - Regras de código
 
-   * Regras de código
+   - Checklist final
 
-   * Checklist final
 2. V2 — Operacional
+   - Mensageria
 
-   * Mensageria
+   - Stripe
 
-   * Stripe
+   - Notificações
 
-   * Notificações
+   - Fluxos principais
 
-   * Fluxos principais
 3. V3 — Multiagente
+   - Adicionar referências explícitas a .ai/skills/
 
-   * Adicionar referências explícitas a .ai/skills/
+   - Adicionar .ai/evaluations/
 
-   * Adicionar .ai/evaluations/
-
-   * Adicionar política de atualização de progresso
+   - Adicionar política de atualização de progresso
 
 ### Exemplo mínimo de skill que combinaria com esse CLAUDE.md
 
