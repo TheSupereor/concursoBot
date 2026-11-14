@@ -38,7 +38,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 | Phase                            | Status | Scope                                                                                   |
 | -------------------------------- | ------ | --------------------------------------------------------------------------------------- |
 | 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                     |
-| 1. Critical fixes                | 🚧     | 5 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test |
+| 1. Critical fixes                | 🚧     | 6 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test |
 | 2. Architecture and code quality | 📋     | Pure domain, modules, validated config, strict TypeScript                               |
 | 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                               |
 | 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                   |
@@ -58,7 +58,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 ### What changed recently
 
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
-- Phase 1 fixes so far: new users start inactive, notification log unique constraint, single RabbitMQ queue declaration, dead-letter queue without a consumer, delivery failures now propagate so retries and the DLQ work. Also fixed two startup blockers (Telegram dependency injection, missing amqplib).
+- Phase 1 fixes so far: new users start inactive, notification log unique constraint, single RabbitMQ queue declaration, dead-letter queue without a consumer, delivery failures now propagate so retries and the DLQ work, and notification idempotency is atomic (claim-first, verified with concurrent claims on a real MySQL). Also fixed two startup blockers (Telegram dependency injection, missing amqplib).
 - Declared the missing `amqplib` dependency (the app could not start on a clean install).
 
 ## Known limitations
