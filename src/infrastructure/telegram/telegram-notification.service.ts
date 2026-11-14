@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import {
   DeliveryResult,
   INotificationService,
-} from '../../domain/ports/INotificationService';
+} from '../../domain/ports/notification-service.port';
 import { classifyTelegramError } from './telegram-delivery';
 import { formatVacancyAlert } from './telegram-format';
-import { Subscriber } from '../../domain/entities/Subscriber';
-import { Vacancy } from '../../domain/entities/Vacancy';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { Vacancy } from '../../domain/entities/vacancy';
 import axios from 'axios';
 import Bottleneck from 'bottleneck';
 

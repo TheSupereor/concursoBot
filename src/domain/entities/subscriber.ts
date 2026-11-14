@@ -1,6 +1,6 @@
-import { Preference } from '../value-objects/Preference';
-import { Salary } from '../value-objects/Salary';
-import { Vacancy } from './Vacancy';
+import { Preference } from '../value-objects/preference';
+import { Salary } from '../value-objects/salary';
+import { Vacancy } from './vacancy';
 
 // NO ANEMIC CLASSES
 export class Subscriber {

@@ -2,10 +2,10 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import Stripe from 'stripe';
-import { WebhookController } from './WebhookController';
-import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/processApprovedPaymentUseCase';
-import { CancelSubscriptionUseCase } from '../../application/use-cases/cancelSubscription';
-import { IProcessedEventRepository } from '../../domain/ports/IProcessedEventRepository';
+import { WebhookController } from './webhook.controller';
+import { ProcessApprovedPaymentUseCase } from '../../application/use-cases/process-approved-payment.use-case';
+import { CancelSubscriptionUseCase } from '../../application/use-cases/cancel-subscription.use-case';
+import { IProcessedEventRepository } from '../../domain/ports/processed-event-repository.port';
 
 const WEBHOOK_SECRET = 'whsec_test_secret';
 

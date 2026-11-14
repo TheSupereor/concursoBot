@@ -1,4 +1,4 @@
-import { DeliveryResult } from '../../domain/ports/INotificationService';
+import { DeliveryResult } from '../../domain/ports/notification-service.port';
 
 interface HttpErrorShape {
   response?: {

@@ -1,10 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { SignUpSubscriberUseCase } from '../../application/use-cases/SignUpSubscriberUseCase';
-import { AddPreferenceUseCase } from '../../application/use-cases/addPreferenceUseCase';
-import { RemovePreferenceUseCase } from '../../application/use-cases/removePreferenceUseCase';
-import { DefineSalaryUseCase } from '../../application/use-cases/DefineSalaryUseCase';
-import { GetSubscriberStatusUseCase } from '../../application/use-cases/GetSubscriberStatusUseCase';
-import { TelegramBotUpdate } from './TelegramBotUpdate';
+import { SignUpSubscriberUseCase } from '../../application/use-cases/sign-up-subscriber.use-case';
+import { AddPreferenceUseCase } from '../../application/use-cases/add-preference.use-case';
+import { RemovePreferenceUseCase } from '../../application/use-cases/remove-preference.use-case';
+import { DefineSalaryUseCase } from '../../application/use-cases/define-salary.use-case';
+import { GetSubscriberStatusUseCase } from '../../application/use-cases/get-subscriber-status.use-case';
+import { TelegramBotUpdate } from './telegram-bot.update';
 
 describe('TelegramBotUpdate dependency injection', () => {
   beforeAll(() => {

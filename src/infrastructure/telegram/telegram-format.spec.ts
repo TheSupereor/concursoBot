@@ -1,5 +1,5 @@
-import { Vacancy } from '../../domain/entities/Vacancy';
-import { Salary } from '../../domain/value-objects/Salary';
+import { Vacancy } from '../../domain/entities/vacancy';
+import { Salary } from '../../domain/value-objects/salary';
 import { escapeHtml, formatVacancyAlert } from './telegram-format';
 
 describe('escapeHtml', () => {

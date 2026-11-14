@@ -10,30 +10,30 @@ import { SubscriberOrmEntity } from './domain/entities/SubscriberOrmEntity';
 import { PreferenceOrmEntity } from './domain/entities/PreferenceOrmEntity';
 
 // --- Adaptadores (Implementações Reais) ---
-import { TelegramNotificationService } from './infrastructure/telegram/TelegramNotificationService';
-import { TelegramBotUpdate } from './infrastructure/telegram/TelegramBotUpdate';
-import { VacancyConsumer } from './infrastructure/messaging/VacancyConsumer';
+import { TelegramNotificationService } from './infrastructure/telegram/telegram-notification.service';
+import { TelegramBotUpdate } from './infrastructure/telegram/telegram-bot.update';
+import { VacancyConsumer } from './infrastructure/messaging/vacancy.consumer';
 import { MysqlSubscriberRepository } from './infrastructure/database/repositories/MysqlAssinanteRepository';
 import { MysqlNotificationLogRepository } from './infrastructure/database/repositories/MysqlNotificationLogRepository';
-import { ISubscriberRepository } from './domain/ports/ISubscriberRepository';
+import { ISubscriberRepository } from './domain/ports/subscriber-repository.port';
 
 // --- Casos de Uso (Aplicação) ---
-import { NotifySubscriberUseCase } from './application/use-cases/NotifySubscriberUseCase';
-import { SignUpSubscriberUseCase } from './application/use-cases/SignUpSubscriberUseCase';
-import { RemovePreferenceUseCase } from './application/use-cases/removePreferenceUseCase';
-import { AddPreferenceUseCase } from './application/use-cases/addPreferenceUseCase';
+import { NotifySubscriberUseCase } from './application/use-cases/notify-subscriber.use-case';
+import { SignUpSubscriberUseCase } from './application/use-cases/sign-up-subscriber.use-case';
+import { RemovePreferenceUseCase } from './application/use-cases/remove-preference.use-case';
+import { AddPreferenceUseCase } from './application/use-cases/add-preference.use-case';
 import { NotificationLogOrmEntity } from './domain/entities/NotificationLogOrmEntity';
 import { StripeEventOrmEntity } from './domain/entities/StripeEventOrmEntity';
 import { MysqlProcessedEventRepository } from './infrastructure/database/repositories/MysqlProcessedEventRepository';
-import { ProcessApprovedPaymentUseCase } from './application/use-cases/processApprovedPaymentUseCase';
-import { CancelSubscriptionUseCase } from './application/use-cases/cancelSubscription';
+import { ProcessApprovedPaymentUseCase } from './application/use-cases/process-approved-payment.use-case';
+import { CancelSubscriptionUseCase } from './application/use-cases/cancel-subscription.use-case';
 
 // --- Controllers ---
-import { WebhookController } from './infrastructure/http/WebhookController';
-import { DefineSalaryUseCase } from './application/use-cases/DefineSalaryUseCase';
-import { GetSubscriberStatusUseCase } from './application/use-cases/GetSubscriberStatusUseCase';
-import { PciConcursosScrapper } from './infrastructure/scrapper/pciConcursosScrapper';
-import { DlqMonitorService } from './infrastructure/monitoring/DlqMonitorService';
+import { WebhookController } from './infrastructure/http/webhook.controller';
+import { DefineSalaryUseCase } from './application/use-cases/define-salary.use-case';
+import { GetSubscriberStatusUseCase } from './application/use-cases/get-subscriber-status.use-case';
+import { PciConcursosScraper } from './infrastructure/scraper/pci-concursos.scraper';
+import { DlqMonitorService } from './infrastructure/monitoring/dlq-monitor.service';
 import {
   rabbitMqUrl,
   vacancyQueueName,
@@ -176,7 +176,7 @@ import {
     // --- ENTRADAS (Portas de Entrada / Gatilhos) ---
     TelegramBotUpdate,
     VacancyConsumer,
-    PciConcursosScrapper,
+    PciConcursosScraper,
     DlqMonitorService,
   ],
   controllers: [WebhookController],

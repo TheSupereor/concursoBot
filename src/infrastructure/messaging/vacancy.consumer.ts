@@ -1,8 +1,8 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
-import { NotifySubscriberUseCase } from '../../application/use-cases/NotifySubscriberUseCase';
-import { Vacancy } from '../../domain/entities/Vacancy';
-import { Salary } from '../../domain/value-objects/Salary';
+import { NotifySubscriberUseCase } from '../../application/use-cases/notify-subscriber.use-case';
+import { Vacancy } from '../../domain/entities/vacancy';
+import { Salary } from '../../domain/value-objects/salary';
 
 @Controller()
 export class VacancyConsumer {

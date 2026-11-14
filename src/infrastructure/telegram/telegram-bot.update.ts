@@ -1,12 +1,12 @@
 import Stripe from 'stripe';
 import { Action, Command, Ctx, Start, Update } from 'nestjs-telegraf';
-import { SignUpSubscriberUseCase } from '../../application/use-cases/SignUpSubscriberUseCase';
+import { SignUpSubscriberUseCase } from '../../application/use-cases/sign-up-subscriber.use-case';
 import { Context, Markup } from 'telegraf';
-import { AddPreferenceUseCase } from '../../application/use-cases/addPreferenceUseCase';
-import { RemovePreferenceUseCase } from '../../application/use-cases/removePreferenceUseCase';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
-import { DefineSalaryUseCase } from '../../application/use-cases/DefineSalaryUseCase';
-import { GetSubscriberStatusUseCase } from '../../application/use-cases/GetSubscriberStatusUseCase';
+import { AddPreferenceUseCase } from '../../application/use-cases/add-preference.use-case';
+import { RemovePreferenceUseCase } from '../../application/use-cases/remove-preference.use-case';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
+import { DefineSalaryUseCase } from '../../application/use-cases/define-salary.use-case';
+import { GetSubscriberStatusUseCase } from '../../application/use-cases/get-subscriber-status.use-case';
 import { Inject, Logger } from '@nestjs/common';
 import { buildCheckoutSessionParams } from '../billing/checkout-session';
 

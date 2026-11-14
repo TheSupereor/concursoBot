@@ -1,4 +1,4 @@
-import { Salary } from '../value-objects/Salary';
+import { Salary } from '../value-objects/salary';
 
 export class Vacancy {
   constructor(

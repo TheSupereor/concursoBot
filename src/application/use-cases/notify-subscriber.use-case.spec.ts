@@ -1,18 +1,18 @@
-import { Subscriber } from '../../domain/entities/Subscriber';
-import { Vacancy } from '../../domain/entities/Vacancy';
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { Subscriber } from '../../domain/entities/subscriber';
+import { Vacancy } from '../../domain/entities/vacancy';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 import {
   DeliveryResult,
   INotificationService,
-} from '../../domain/ports/INotificationService';
+} from '../../domain/ports/notification-service.port';
 import {
   ClaimResult,
   INotificationLogRepository,
-} from '../../domain/ports/INotificationLogRepository';
-import { Preference } from '../../domain/value-objects/Preference';
-import { Salary } from '../../domain/value-objects/Salary';
-import { NotifySubscriberUseCase } from './NotifySubscriberUseCase';
-import { RetryableDeliveryError } from '../errors/RetryableDeliveryError';
+} from '../../domain/ports/notification-log-repository.port';
+import { Preference } from '../../domain/value-objects/preference';
+import { Salary } from '../../domain/value-objects/salary';
+import { NotifySubscriberUseCase } from './notify-subscriber.use-case';
+import { RetryableDeliveryError } from '../errors/retryable-delivery.error';
 
 /**
  * In-memory log with the same semantics as the MySQL implementation: claim is atomic and

@@ -1,4 +1,4 @@
-import { Salary } from './Salary';
+import { Salary } from './salary';
 
 export class Preference {
   constructor(

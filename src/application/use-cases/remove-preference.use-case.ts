@@ -1,4 +1,4 @@
-import { ISubscriberRepository } from '../../domain/ports/ISubscriberRepository';
+import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.port';
 
 export class RemovePreferenceUseCase {
   constructor(private readonly subscriberRepository: ISubscriberRepository) {}
