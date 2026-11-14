@@ -38,7 +38,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 | Phase                            | Status | Scope                                                                                   |
 | -------------------------------- | ------ | --------------------------------------------------------------------------------------- |
 | 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                     |
-| 1. Critical fixes                | 🚧     | 8 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test |
+| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test |
 | 2. Architecture and code quality | 📋     | Pure domain, modules, validated config, strict TypeScript                               |
 | 3. Messaging and data            | 📋     | Retry queues, migrations, matching in SQL                                               |
 | 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                   |
@@ -58,7 +58,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 ### What changed recently
 
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
-- Phase 1 fixes so far: new users start inactive, notification log unique constraint, single RabbitMQ queue declaration, dead-letter queue without a consumer, delivery failures now propagate so retries and the DLQ work, and notification idempotency is atomic (claim-first, verified with concurrent claims on a real MySQL), Stripe webhooks are idempotent and the Telegram id is stored on the subscription so cancellations reach the right user. Also fixed two startup blockers (Telegram dependency injection, missing amqplib).
+- Phase 1 fixes so far: new users start inactive, notification log unique constraint, single RabbitMQ queue declaration, dead-letter queue without a consumer, delivery failures now propagate so retries and the DLQ work, and notification idempotency is atomic (claim-first, verified with concurrent claims on a real MySQL), Stripe webhooks are idempotent and the Telegram id is stored on the subscription so cancellations reach the right user. Vacancy alerts are sent as escaped HTML, so scraped text can no longer break or inject markup. Also fixed two startup blockers (Telegram dependency injection, missing amqplib).
 - Declared the missing `amqplib` dependency (the app could not start on a clean install).
 
 ## Known limitations
@@ -66,6 +66,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 These are known issues in the current code and are scheduled in the phases above:
 
 - **End-to-end startup is not verified with real Telegram/Stripe credentials yet** (M1 blocker). The queue topology was verified against a real RabbitMQ broker.
+- Bot command replies still use legacy Markdown, and callback data (area, region) is not validated against an allow-list yet.
 - Schema is created with `synchronize: true`; there are no migrations.
 - The scraper reads a single region and its area classifier produces false positives.
 - Test coverage is limited to the domain and one use case.

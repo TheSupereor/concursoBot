@@ -4,6 +4,7 @@ import {
   INotificationService,
 } from '../../domain/ports/INotificationService';
 import { classifyTelegramError } from './telegram-delivery';
+import { formatVacancyAlert } from './telegram-format';
 import { Subscriber } from '../../domain/entities/Subscriber';
 import { Vacancy } from '../../domain/entities/Vacancy';
 import axios from 'axios';
@@ -36,25 +37,18 @@ export class TelegramNotificationService implements INotificationService {
     subscriber: Subscriber,
     vacancy: Vacancy,
   ): Promise<DeliveryResult> {
-    // Monta a mensagem bonitinha para o usuário
-    const mensagem = `
-🚨 **Novo Edital Encontrado!** 🚨
-
-**Cargo:** ${vacancy.job}
-**Área:** ${vacancy.area}
-**Região:** ${vacancy.region}
-**Salário:** R$ ${vacancy.salary.value.toFixed(2)}
-
-Acesse o portal para mais detalhes.
-    `;
-
-    return this.deliver(subscriber.telegramId, mensagem);
+    return this.deliver(
+      subscriber.telegramId,
+      formatVacancyAlert(vacancy),
+      'HTML',
+    );
   }
 
   async sendCustomAlert(
     subscriber: Subscriber,
     text: string,
   ): Promise<DeliveryResult> {
+    // Plain text: internal messages never carry markup, so nothing can be misparsed.
     return this.deliver(subscriber.telegramId, text);
   }
 
@@ -63,14 +57,18 @@ Acesse o portal para mais detalhes.
    * so callers can decide whether to retry. Errors are logged by status only: the raw axios
    * error embeds the request URL, which contains the bot token.
    */
-  private async deliver(chatId: string, text: string): Promise<DeliveryResult> {
+  private async deliver(
+    chatId: string,
+    text: string,
+    parseMode?: 'HTML',
+  ): Promise<DeliveryResult> {
     try {
       // Bottleneck queues requests and releases one every 35ms.
       await this.limiter.schedule(() =>
         axios.post(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
           chat_id: chatId,
           text,
-          parse_mode: 'Markdown',
+          ...(parseMode ? { parse_mode: parseMode } : {}),
         }),
       );
       return { status: 'sent' };
