@@ -22,6 +22,7 @@ const SMOKE_QUEUE = 'concursos.smoke.new';
 const USER = 111;
 
 const sent = []; // messages the bot sent through the fake Telegram API
+let failSends = 0; // fail the next N sendMessage calls with HTTP 500
 const calls = [];
 let pending = [];
 let updateId = 1;
@@ -58,6 +59,18 @@ const fake = http.createServer((req, res) => {
       const out = pending;
       pending = [];
       return ok(out);
+    }
+    if (method === 'sendMessage' && failSends > 0) {
+      failSends--;
+      res.statusCode = 500;
+      res.setHeader('content-type', 'application/json');
+      return res.end(
+        JSON.stringify({
+          ok: false,
+          error_code: 500,
+          description: 'Internal Server Error',
+        }),
+      );
     }
     if (method === 'sendMessage') {
       sent.push({
@@ -269,6 +282,51 @@ const sql = (q) => mysql(SMOKE_DB, q);
       '6. the same vacancy published again was NOT delivered twice (idempotent)',
     );
 
+    // Transient failures: Telegram answers 500 twice. The message must go through the 2s and
+    // 4s retry queues and be delivered on the third attempt, without touching the DLQ.
+    failSends = 2;
+    const retried = Date.now();
+    ch.sendToQueue(
+      SMOKE_QUEUE,
+      Buffer.from(
+        JSON.stringify({
+          pattern: 'concursos.new',
+          data: {
+            id: 'vaga-retry-1',
+            job: 'Retry test',
+            area: 'TI',
+            region: 'SP',
+            salary: 9000,
+          },
+        }),
+      ),
+      { persistent: true },
+    );
+    await waitFor(
+      'alert after retries',
+      () => sent.some((m) => /Retry test/.test(m.text)),
+      30000,
+    );
+    const elapsed = Date.now() - retried;
+    assert.ok(
+      elapsed >= 5500,
+      `delivered too early (${elapsed}ms): retry queues were skipped`,
+    );
+    assert.strictEqual(
+      sql(
+        "select status from notification_logs where vacancyId='vaga-retry-1'",
+      ),
+      'SENT',
+    );
+    assert.strictEqual(sent.filter((m) => /Retry test/.test(m.text)).length, 1);
+    assert.strictEqual(
+      (await ch.checkQueue('concursos.dlq')).messageCount,
+      dlqBefore,
+    );
+    console.log(
+      `7. Telegram failed twice -> retried through the 2s and 4s TTL queues and delivered after ${elapsed}ms; DLQ untouched`,
+    );
+
     ch.sendToQueue(
       SMOKE_QUEUE,
       Buffer.from(
@@ -283,7 +341,7 @@ const sql = (q) => mysql(SMOKE_DB, q);
     const dlq = await ch.checkQueue('concursos.dlq');
     const deadLettered = dlq.messageCount - dlqBefore;
     console.log(
-      `7. malformed message -> DLQ (+${deadLettered}), consumers=${dlq.consumerCount}`,
+      `8. malformed message -> DLQ (+${deadLettered}), consumers=${dlq.consumerCount}`,
     );
     assert.strictEqual(deadLettered, 1);
     assert.strictEqual(dlq.consumerCount, 0);
