@@ -47,7 +47,7 @@
     "cheerio": "^1.2.0",
     "domhandler": "^5.0.3",
     "dotenv": "^18.0.10",
-    "mysql2": "^3.22.3",
+    "mysql2": "^3.24.6",
     "nestjs-telegraf": "^2.9.1",
     "reflect-metadata": "^0.2.0",
     "robots-parser": "^3.0.1",
