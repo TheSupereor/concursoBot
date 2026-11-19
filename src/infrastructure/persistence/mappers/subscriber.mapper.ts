@@ -26,12 +26,27 @@ export class SubscriberMapper {
     return subscriber;
   }
 
-  static toOrm(subscriber: Subscriber): SubscriberOrmEntity {
+  /**
+   * Builds the persistence model for a subscriber. When the currently persisted row is given,
+   * a preference with the same area and region reuses the existing row (same id, salary
+   * updated), so saving does not delete and re-insert preferences that did not change.
+   * Persisted preferences that are absent from the aggregate are left out and removed by the
+   * ORM (orphaned rows are deleted).
+   */
+  static toOrm(
+    subscriber: Subscriber,
+    existing?: SubscriberOrmEntity,
+  ): SubscriberOrmEntity {
     const orm = new SubscriberOrmEntity();
     orm.telegramId = subscriber.telegramId;
     orm.isActive = subscriber.isActive;
     orm.preferences = subscriber.getPreferences().map((preference) => {
-      const row = new PreferenceOrmEntity();
+      const row =
+        existing?.preferences?.find(
+          (candidate) =>
+            candidate.area === preference.area &&
+            candidate.region === preference.region,
+        ) ?? new PreferenceOrmEntity();
       row.area = preference.area;
       row.region = preference.region;
       row.minimumSalary = preference.minimumSalary.value;

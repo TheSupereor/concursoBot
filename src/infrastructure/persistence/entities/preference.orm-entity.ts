@@ -33,6 +33,9 @@ export class PreferenceOrmEntity {
     {
       nullable: false,
       onDelete: 'CASCADE',
+      // Removed from the aggregate => deleted. The option belongs on the child side; on the
+      // OneToMany it is ignored and the ORM tries to detach the row instead.
+      orphanedRowAction: 'delete',
     },
   )
   subscriber!: SubscriberOrmEntity;

@@ -62,4 +62,46 @@ describe('SubscriberMapper', () => {
     expect(roundTripped.getPreferences()).toEqual(original.getPreferences());
     expect(roundTripped.isActive).toBe(original.isActive);
   });
+
+  describe('reusing persisted rows', () => {
+    const existingRow = (): SubscriberOrmEntity => {
+      const orm = new SubscriberOrmEntity();
+      orm.telegramId = '7';
+      orm.isActive = true;
+      const keep = new PreferenceOrmEntity();
+      keep.id = 10;
+      keep.area = 'TI';
+      keep.region = 'SP';
+      keep.minimumSalary = '1000.00';
+      const drop = new PreferenceOrmEntity();
+      drop.id = 11;
+      drop.area = 'SAUDE';
+      drop.region = 'RJ';
+      drop.minimumSalary = '0.00';
+      orm.preferences = [keep, drop];
+      return orm;
+    };
+
+    it('keeps the id of a preference with the same area and region and updates its salary', () => {
+      const subscriber = new Subscriber('7', true);
+      subscriber.addPreference(new Preference('TI', 'SP', new Salary(9000)));
+
+      const orm = SubscriberMapper.toOrm(subscriber, existingRow());
+
+      expect(orm.preferences).toHaveLength(1);
+      expect(orm.preferences?.[0]?.id).toBe(10);
+      expect(orm.preferences?.[0]?.minimumSalary).toBe(9000);
+    });
+
+    it('creates a new row for a preference that did not exist and omits removed ones', () => {
+      const subscriber = new Subscriber('7', true);
+      subscriber.addPreference(new Preference('EDUCACAO', 'BR', new Salary(0)));
+
+      const orm = SubscriberMapper.toOrm(subscriber, existingRow());
+
+      expect(orm.preferences).toHaveLength(1);
+      expect(orm.preferences?.[0]?.id).toBeUndefined();
+      expect(orm.preferences?.[0]?.area).toBe('EDUCACAO');
+    });
+  });
 });

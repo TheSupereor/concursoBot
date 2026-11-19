@@ -54,7 +54,24 @@ export class MysqlSubscriberRepository implements ISubscriberRepository {
     return row ? SubscriberMapper.toDomain(row) : null;
   }
 
+  /**
+   * Saves the aggregate in one transaction. The persisted row is read first (and locked, so a
+   * concurrent save of the same subscriber waits) and its preferences are reused by area and
+   * region: unchanged preferences keep their ids, new ones are inserted and removed ones are
+   * deleted.
+   */
   async save(subscriber: Subscriber): Promise<void> {
-    await this.ormRepository.save(SubscriberMapper.toOrm(subscriber));
+    await this.ormRepository.manager.transaction(async (manager) => {
+      const repository = manager.getRepository(SubscriberOrmEntity);
+      const existing = await repository.findOne({
+        where: { telegramId: subscriber.telegramId },
+        relations: ['preferences'],
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      await repository.save(
+        SubscriberMapper.toOrm(subscriber, existing ?? undefined),
+      );
+    });
   }
 }
