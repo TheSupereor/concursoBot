@@ -1,0 +1,161 @@
+<!doctype html>
+<!--
+  Synthetic fixture: organizations and links are fictitious. The markup mirrors the real listing
+  pages (a container with one ".ca" block per vacancy) and covers the formats seen in the wild.
+-->
+<html lang="pt-br">
+  <head>
+    <title>Listing fixture</title>
+  </head>
+  <body>
+    <div class="da">
+      <!-- 1. several openings, salary ceiling, plain deadline -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/prefeitura-exemplo-sp"
+          title="Prefeitura de Exemplo - SP abre concursos para diversos cargos"
+          rel="bookmark"
+          style="display: block"
+          >Prefeitura de Exemplo</a
+        >
+        <div class="cb">
+          <img
+            src="data:image/png;base64,AAAA"
+            data-src="https://cdn.example.test/a.png"
+            class="lazyload"
+          />
+        </div>
+        <div class="cc">SP</div>
+        <div class="cd">
+          107 vagas até R$ 8.971,98<br /><span
+            >Vários Cargos<br /><span>Médio / Técnico / Superior</span></span
+          >
+        </div>
+        <div class="ce"><span>14/12/2026</span></div>
+        <div class="clear"></div>
+      </div>
+
+      <!-- 2. a single opening for a specific role -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/camara-exemplo-mg"
+          title="Câmara de Exemplo - MG abre vaga para Analista de Sistemas"
+          >Câmara Municipal de Exemplo</a
+        >
+        <div class="cc">MG</div>
+        <div class="cd">
+          1 vaga até R$ 1.500,00<br /><span
+            >Analista de Sistemas<br /><span>Superior</span></span
+          >
+        </div>
+        <div class="ce"><span>20/11/2026</span></div>
+      </div>
+
+      <!-- 3. reserve list with an extended deadline -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/instituto-exemplo-rj"
+          title="Instituto Exemplo - RJ prorroga inscrições"
+          >Instituto Exemplo</a
+        >
+        <div class="cc">RJ</div>
+        <div class="cd">
+          Cadastro de reserva até R$ 3.200,00<br /><span
+            >Enfermeiro<br /><span>Superior</span></span
+          >
+        </div>
+        <div class="ce"><span>Prorrogado até23/11/2026</span></div>
+      </div>
+
+      <!-- 4. salary given only per teaching hour: not comparable with a monthly minimum -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/escola-exemplo-sp"
+          title="Escola Exemplo - SP contrata professores"
+          >Escola Técnica Exemplo</a
+        >
+        <div class="cc">SP</div>
+        <div class="cd">
+          Vagas até R$ 32,50 por hora-aula<br /><span
+            >Professor Substituto<br /><span>Superior</span></span
+          >
+        </div>
+        <div class="ce"><span>25/11/2026</span></div>
+      </div>
+
+      <!-- 5. monthly and hourly figures in the same line -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/universidade-exemplo-es"
+          title="Universidade Exemplo - ES abre seleção"
+          >Universidade Exemplo</a
+        >
+        <div class="cc">ES</div>
+        <div class="cd">
+          CR até R$ 4.000,00 ou R$ 25,00 por hora-aula<br /><span
+            >Professor Titular<br /><span>Superior</span></span
+          >
+        </div>
+        <div class="ce"><span>20/11 a21/12/2026</span></div>
+      </div>
+
+      <!-- 6. no salary at all, range deadline that crosses the year -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/autarquia-exemplo-sp"
+          title="Autarquia Exemplo - SP abre concurso"
+          >Autarquia Exemplo</a
+        >
+        <div class="cc">SP</div>
+        <div class="cd">
+          5 vagas<br /><span>Vários Cargos<br /><span>Médio</span></span>
+        </div>
+        <div class="ce"><span>23/12/2026 a21/01/2027</span></div>
+      </div>
+
+      <!-- 7. thousands separator in the number of openings -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/governo-exemplo-sp"
+          title="Governo Exemplo - SP abre concurso gigante"
+          >Governo do Estado de Exemplo</a
+        >
+        <div class="cc">SP</div>
+        <div class="cd">
+          1.250 vagas até R$ 12.000,00<br /><span
+            >Vários Cargos<br /><span>Médio / Superior</span></span
+          >
+        </div>
+        <div class="ce"><span>09 a14/01/2027</span></div>
+      </div>
+
+      <!-- 8. cancelled -->
+      <div class="ca">
+        <a
+          href="https://example.test/noticias/prefeitura-cancelada-mg"
+          title="Prefeitura Cancelada - MG"
+          >Prefeitura Cancelada</a
+        >
+        <div class="cc">MG</div>
+        <div class="cd">
+          10 vagas até R$ 2.000,00<br /><span
+            >Vários Cargos<br /><span>Médio</span></span
+          >
+        </div>
+        <div class="ce"><span>Cancelado</span></div>
+      </div>
+
+      <!-- 9. malformed blocks that must be skipped, not crash the page -->
+      <div class="ca">
+        <div class="cc">SP</div>
+        <div class="cd">3 vagas</div>
+      </div>
+      <div class="ca">
+        <a href="https://example.test/noticias/sem-uf" title="Sem UF"
+          >Sem estado informado</a
+        >
+        <div class="cd">3 vagas até R$ 1.000,00</div>
+      </div>
+    </div>
+  </body>
+</html>
