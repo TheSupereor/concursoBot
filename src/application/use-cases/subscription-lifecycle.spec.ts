@@ -14,7 +14,7 @@ describe('subscription lifecycle use cases', () => {
     repository = {
       save: jest.fn(),
       searchByTelegramId: jest.fn().mockImplementation(async () => subscriber),
-      searchActiveSubscribers: jest.fn(),
+      searchInterestedIn: jest.fn(),
     };
     notifier = {
       sendVacancyAlert: jest.fn(),

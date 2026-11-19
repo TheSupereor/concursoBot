@@ -1,6 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  Column,
+  Index,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+} from 'typeorm';
 import { SubscriberOrmEntity } from './subscriber.orm-entity';
 
+// Serves the vacancy matching query (area, region and minimum salary).
+@Index('IDX_preferences_matching', ['area', 'region', 'minimumSalary'])
 @Entity('preferences') // Nome da tabela no MySQL
 export class PreferenceOrmEntity {
   @PrimaryGeneratedColumn() // Cria um ID numérico que aumenta sozinho (1, 2, 3...)

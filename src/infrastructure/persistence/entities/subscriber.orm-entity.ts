@@ -1,6 +1,8 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, OneToMany, Index } from 'typeorm';
 import { PreferenceOrmEntity } from './preference.orm-entity';
 
+// Matching only considers active subscribers.
+@Index('IDX_subscribers_active', ['isActive'])
 @Entity('subscribers')
 export class SubscriberOrmEntity {
   @PrimaryColumn() // Usamos PrimaryColumn porque o telegramId já é único e vem de fora
