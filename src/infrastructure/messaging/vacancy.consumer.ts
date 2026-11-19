@@ -6,7 +6,7 @@ import { Vacancy } from '../../domain/entities/vacancy';
 import { Salary } from '../../domain/value-objects/salary';
 import { AppConfig } from '../../shared/config/app.config';
 import { APP_CONFIG } from '../../shared/tokens';
-import { retryQueueName } from './rabbitmq.config';
+import { VACANCY_EVENT, retryQueueName } from './rabbitmq.config';
 import {
   ATTEMPT_HEADER,
   MAX_ATTEMPTS,
@@ -18,9 +18,16 @@ import {
 const vacancyMessageSchema = z.object({
   id: z.string().min(1),
   job: z.string(),
-  area: z.string(),
+  areas: z.array(z.string().min(1)).min(1),
   region: z.string(),
   salary: z.number().min(0),
+  url: z.string().min(1).optional(),
+  organization: z.string().optional(),
+  // ISO date (YYYY-MM-DD or a full timestamp); rejected when it is not a real date.
+  deadline: z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), 'invalid date')
+    .optional(),
 });
 
 interface RabbitMessage {
@@ -48,7 +55,7 @@ export class VacancyConsumer {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
-  @EventPattern('concursos.new')
+  @EventPattern(VACANCY_EVENT)
   async handleNewVacancy(
     @Payload() payload: unknown,
     @Ctx() context: RmqContext,
@@ -77,9 +84,14 @@ export class VacancyConsumer {
         new Vacancy(
           data.id,
           data.job,
-          data.area,
+          data.areas,
           data.region,
           new Salary(data.salary),
+          {
+            url: data.url,
+            organization: data.organization,
+            deadline: data.deadline ? new Date(data.deadline) : undefined,
+          },
         ),
       );
       channel.ack(message);

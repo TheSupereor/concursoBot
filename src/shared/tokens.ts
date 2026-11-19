@@ -9,3 +9,7 @@ export const PROCESSED_EVENT_REPOSITORY = 'IProcessedEventRepository';
 
 export const RABBITMQ_CLIENT = 'RABBITMQ_CLIENT';
 export const LOGGER = 'ILogger';
+
+export const VACANCY_REPOSITORY = 'IVacancyRepository';
+export const VACANCY_PUBLISHER = 'IVacancyPublisher';
+export const VACANCY_SOURCES = 'VACANCY_SOURCES';

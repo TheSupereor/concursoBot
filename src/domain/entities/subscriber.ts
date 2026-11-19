@@ -63,7 +63,8 @@ export class Subscriber {
 
     // Interested when at least one preference matches.
     return this.preferences.some((pref) => {
-      const areaMatch = pref.area === vacancy.area || pref.area === 'QUALQUER';
+      const areaMatch =
+        pref.area === 'QUALQUER' || vacancy.areas.includes(pref.area);
       const regionMatch =
         pref.region === vacancy.region || pref.region === 'BR';
       const salaryMatch = vacancy.salary.isBiggerThanOrEqual(

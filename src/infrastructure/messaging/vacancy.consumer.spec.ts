@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { RmqContext } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { NotifySubscriberUseCase } from '../../application/use-cases/notify-subscriber.use-case';
+import { Vacancy } from '../../domain/entities/vacancy';
 import { AppConfig } from '../../shared/config/app.config';
 import { APP_CONFIG } from '../../shared/tokens';
 import { VacancyConsumer } from './vacancy.consumer';
@@ -12,7 +13,7 @@ describe('VacancyConsumer', () => {
   const validPayload = {
     id: 'v1',
     job: 'Analista',
-    area: 'TI',
+    areas: ['TI'],
     region: 'SP',
     salary: 5000,
   };
@@ -72,9 +73,33 @@ describe('VacancyConsumer', () => {
     expect(publish).not.toHaveBeenCalled();
   });
 
+  it('passes the link, organization and deadline on to the use case', async () => {
+    await consumer.handleNewVacancy(
+      {
+        ...validPayload,
+        areas: ['EDUCACAO', 'TI'],
+        url: 'https://example.test/edital',
+        organization: 'Prefeitura de Exemplo',
+        deadline: '2026-12-14',
+      },
+      contextFor(),
+    );
+
+    const vacancy = execute.mock.calls[0]?.[0] as Vacancy;
+    expect(vacancy.areas).toEqual(['EDUCACAO', 'TI']);
+    expect(vacancy.details).toEqual({
+      url: 'https://example.test/edital',
+      organization: 'Prefeitura de Exemplo',
+      deadline: new Date('2026-12-14T00:00:00.000Z'),
+    });
+  });
+
   it.each([
     ['not an object', 'garbage'],
     ['a missing id', { ...validPayload, id: undefined }],
+    ['no areas', { ...validPayload, areas: [] }],
+    ['areas that are not a list', { ...validPayload, areas: 'TI' }],
+    ['an invalid deadline', { ...validPayload, deadline: 'tomorrow' }],
     ['a negative salary', { ...validPayload, salary: -1 }],
     ['a salary that is not a number', { ...validPayload, salary: 'a lot' }],
   ])(
