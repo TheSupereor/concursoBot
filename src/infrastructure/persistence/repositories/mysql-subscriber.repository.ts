@@ -35,7 +35,7 @@ export class MysqlSubscriberRepository implements ISubscriberRepository {
             AND matching.minimumSalary <= :salary
         )`,
         {
-          areas: [vacancy.area, 'QUALQUER'],
+          areas: [...vacancy.areas, 'QUALQUER'],
           regions: [vacancy.region, 'BR'],
           salary: vacancy.salary.value,
         },

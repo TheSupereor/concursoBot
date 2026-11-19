@@ -51,3 +51,11 @@ export class NoPreferencesError extends DomainError {
     super('The subscriber has no preferences yet');
   }
 }
+
+export class InvalidVacancyError extends DomainError {
+  readonly code = 'INVALID_VACANCY';
+
+  constructor(reason: string) {
+    super(`Invalid vacancy: ${reason}`);
+  }
+}

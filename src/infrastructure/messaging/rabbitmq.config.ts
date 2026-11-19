@@ -3,6 +3,9 @@ import { RETRY_DELAYS_MS } from './retry-policy';
 
 export const DEAD_LETTER_QUEUE = 'concursos.dlq';
 
+/** Event name of a new vacancy; the publisher emits it and the consumer handles it. */
+export const VACANCY_EVENT = 'concursos.new';
+
 /**
  * Single source of truth for the vacancy queue arguments. RabbitMQ rejects a queue
  * re-declaration with different arguments (PRECONDITION_FAILED), so the consumer and

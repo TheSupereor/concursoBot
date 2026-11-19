@@ -33,7 +33,7 @@ describe('MysqlSubscriberRepository (integration)', () => {
   });
 
   describe('searchInterestedIn', () => {
-    const vacancy = (area: string, region: string, salary: number) =>
+    const vacancy = (area: string | string[], region: string, salary: number) =>
       new Vacancy('v1', 'Role', area, region, new Salary(salary));
 
     it('returns only active subscribers with a preference that matches', async () => {
@@ -109,7 +109,8 @@ describe('MysqlSubscriberRepository (integration)', () => {
       for (const s of subscribers) await repository.save(s);
 
       let compared = 0;
-      for (const area of ['TI', 'SAUDE', 'Geral']) {
+      // A vacancy can belong to several areas; 'Geral' matches no preference but QUALQUER.
+      for (const area of [['TI'], ['SAUDE'], ['Geral'], ['EDUCACAO', 'TI']]) {
         for (const region of ['SP', 'RJ', 'AC']) {
           for (const salary of [0, 1000, 5000, 8000, 9000]) {
             const v = vacancy(area, region, salary);
@@ -122,15 +123,18 @@ describe('MysqlSubscriberRepository (integration)', () => {
               .map((s) => s.telegramId)
               .sort();
 
-            expect({ vacancy: `${area}/${region}/${salary}`, actual }).toEqual({
-              vacancy: `${area}/${region}/${salary}`,
+            expect({
+              vacancy: `${area.join('+')}/${region}/${salary}`,
+              actual,
+            }).toEqual({
+              vacancy: `${area.join('+')}/${region}/${salary}`,
               actual: expected,
             });
             compared++;
           }
         }
       }
-      expect(compared).toBe(45);
+      expect(compared).toBe(60);
     });
   });
 

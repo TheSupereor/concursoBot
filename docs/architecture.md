@@ -63,14 +63,21 @@ Axios or amqplib). Use cases are plain classes registered with Nest through `pro
 
 ```mermaid
 sequenceDiagram
-  participant Sc as Scraper (cron)
+  participant Sc as IngestVacanciesUseCase (cron)
+  participant Src as Vacancy source (PCI)
+  participant Vac as vacancies table
   participant MQ as RabbitMQ
   participant Co as VacancyConsumer
   participant UC as NotifySubscriberUseCase
   participant Log as notification_logs
   participant Tg as Telegram
 
-  Sc->>MQ: publish vacancy
+  Sc->>Src: fetch listings
+  Src-->>Sc: scraped vacancies
+  Sc->>Sc: classify areas, build a stable id
+  Sc->>Vac: already known?
+  Sc->>MQ: publish new vacancy
+  Sc->>Vac: register (after publishing)
   MQ->>Co: deliver (manual ack)
   Co->>Co: validate payload (zod)
   Co->>UC: execute(vacancy)
@@ -144,5 +151,5 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 
 ## Known limitations
 
-See the README. In short: the scraper reads one region and vacancies are not persisted yet. Both belong
-to the next phase.
+See the README. In short: listings titled "Vários Cargos" carry no role information, and there is no
+politeness layer (robots.txt, locking between instances) yet. Both are tracked in the project phases.

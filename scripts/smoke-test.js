@@ -240,9 +240,12 @@ const sql = (q) => mysql(SMOKE_DB, q);
     const vacancy = {
       id: 'vaga-smoke-1',
       job: 'Analista <de> Sistemas_Sr *TI*',
-      area: 'TI',
+      areas: ['EDUCACAO', 'TI'],
       region: 'SP',
       salary: 8000,
+      url: 'https://example.test/noticias/edital?id=1&ref=smoke',
+      organization: 'Prefeitura de Exemplo',
+      deadline: '2026-12-14',
     };
     ch.sendToQueue(
       SMOKE_QUEUE,
@@ -251,13 +254,20 @@ const sql = (q) => mysql(SMOKE_DB, q);
     );
     await waitFor(
       'vacancy alert',
-      () => sent.some((m) => /Novo Edital/.test(m.text)),
+      () => sent.some((m) => /Novo concurso/.test(m.text)),
       20000,
     );
-    const alert = sent.find((m) => /Novo Edital/.test(m.text));
+    const alert = sent.find((m) => /Novo concurso/.test(m.text));
     assert.strictEqual(alert.chat_id, String(USER));
     assert.strictEqual(alert.parse_mode, 'HTML');
     assert.ok(alert.text.includes('Analista &lt;de&gt; Sistemas_Sr *TI*'));
+    assert.ok(alert.text.includes('Prefeitura de Exemplo'));
+    assert.ok(alert.text.includes('14/12/2026'));
+    assert.ok(
+      alert.text.includes(
+        '<a href="https://example.test/noticias/edital?id=1&amp;ref=smoke">Ver edital</a>',
+      ),
+    );
     assert.strictEqual(
       sql(
         "select status from notification_logs where vacancyId='vaga-smoke-1'",
@@ -275,7 +285,7 @@ const sql = (q) => mysql(SMOKE_DB, q);
     );
     await new Promise((r) => setTimeout(r, 2500));
     assert.strictEqual(
-      sent.filter((m) => /Novo Edital/.test(m.text)).length,
+      sent.filter((m) => /Novo concurso/.test(m.text)).length,
       1,
     );
     console.log(
@@ -294,7 +304,7 @@ const sql = (q) => mysql(SMOKE_DB, q);
           data: {
             id: 'vaga-retry-1',
             job: 'Retry test',
-            area: 'TI',
+            areas: ['TI'],
             region: 'SP',
             salary: 9000,
           },
@@ -332,7 +342,13 @@ const sql = (q) => mysql(SMOKE_DB, q);
       Buffer.from(
         JSON.stringify({
           pattern: 'concursos.new',
-          data: { id: 'bad', job: 'x', area: 'TI', region: 'SP', salary: -5 },
+          data: {
+            id: 'bad',
+            job: 'x',
+            areas: ['TI'],
+            region: 'SP',
+            salary: -5,
+          },
         }),
       ),
       { persistent: true },
