@@ -23,7 +23,12 @@
     "test:ci": "jest --ci --coverage",
     "prepare": "husky",
     "smoke": "node scripts/smoke-test.js",
-    "arch:check": "depcruise src --config .dependency-cruiser.cjs"
+    "arch:check": "depcruise src --config .dependency-cruiser.cjs",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/infrastructure/persistence/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/infrastructure/persistence/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infrastructure/persistence/data-source.ts",
+    "migration:check": "typeorm-ts-node-commonjs schema:log -d src/infrastructure/persistence/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -38,6 +43,7 @@
     "axios": "^1.15.2",
     "bottleneck": "^2.19.5",
     "cheerio": "^1.2.0",
+    "dotenv": "^18.0.10",
     "mysql2": "^3.22.3",
     "nestjs-telegraf": "^2.9.1",
     "reflect-metadata": "^0.2.0",

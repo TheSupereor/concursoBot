@@ -20,12 +20,11 @@ export class NotificationLogOrmEntity {
   @Column()
   vacancyId!: string;
 
-  // PENDING = claimed and being delivered. The column default is SENT so rows written before
-  // statuses existed (which only recorded successful deliveries) keep their meaning.
+  // PENDING = claimed and being delivered, SENT = delivered, FAILED = permanent failure.
   @Column({
     type: 'enum',
     enum: ['PENDING', 'SENT', 'FAILED'],
-    default: 'SENT',
+    default: 'PENDING',
   })
   status!: NotificationStatus;
 

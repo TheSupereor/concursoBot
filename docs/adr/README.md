@@ -8,7 +8,7 @@ supersedes it.
 | ---------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------ |
 | [0001](0001-hexagonal-architecture.md)         | Hexagonal architecture with layers and feature modules  | Accepted                                                           |
 | [0002](0002-telegram-id-as-primary-key.md)     | `telegramId` as the subscriber primary key              | Accepted                                                           |
-| [0003](0003-schema-management.md)              | Schema sync in development, migrations before real data | Accepted, migrations pending                                       |
+| [0003](0003-schema-management.md)              | The schema is owned by migrations                       | Accepted, supersedes `synchronize` in development                  |
 | [0004](0004-bottleneck-rate-limiting.md)       | Bottleneck for Telegram rate limiting                   | Accepted                                                           |
 | [0005](0005-rabbitmq-retry-and-dlq.md)         | RabbitMQ with retries and a dead-letter queue           | Accepted                                                           |
 | [0006](0006-claim-first-idempotency.md)        | Claim-first idempotency for notifications               | Accepted                                                           |

@@ -1,4 +1,4 @@
-import { loadConfig } from './app.config';
+import { loadConfig, loadDatabaseConfig } from './app.config';
 
 const validEnv = (): NodeJS.ProcessEnv => ({
   DB_USERNAME: 'user',
@@ -88,5 +88,36 @@ describe('loadConfig', () => {
         }),
       ).toThrow('guest');
     });
+  });
+});
+
+describe('loadDatabaseConfig', () => {
+  it('needs only the database variables (the migration CLI has no Stripe or Telegram keys)', () => {
+    expect(
+      loadDatabaseConfig({
+        DB_USERNAME: 'user',
+        DB_PASSWORD: 'secret-db-password',
+        DB_DATABASE: 'concursos',
+      }),
+    ).toEqual({
+      host: 'localhost',
+      port: 3306,
+      username: 'user',
+      password: 'secret-db-password',
+      database: 'concursos',
+    });
+  });
+
+  it('fails fast naming the missing variables, without echoing values', () => {
+    let message = '';
+    try {
+      loadDatabaseConfig({ DB_PASSWORD: 'secret-db-password' });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+
+    expect(message).toContain('DB_USERNAME');
+    expect(message).toContain('DB_DATABASE');
+    expect(message).not.toContain('secret-db-password');
   });
 });

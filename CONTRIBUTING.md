@@ -38,6 +38,20 @@ docker compose up -d mysql rabbitmq && npm run build && npm run smoke
 
 Git hooks (husky) format and lint staged files on commit and validate the commit message.
 
+## Database migrations
+
+The schema is owned by migrations (`synchronize` is off). After changing an ORM entity, generate
+a migration against an empty database, register it in
+`src/infrastructure/persistence/migrations/index.ts` and check there is no drift:
+
+```bash
+npm run migration:generate -- src/infrastructure/persistence/migrations/<Name>
+npm run migration:check
+```
+
+The app applies pending migrations at startup; `npm run migration:run` and
+`npm run migration:revert` do it by hand.
+
 ## Commit and PR conventions
 
 - **Conventional Commits**, in English: `feat(billing): ...`, `fix(notifications): ...`, `chore: ...`.
