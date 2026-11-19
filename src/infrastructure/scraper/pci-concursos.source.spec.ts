@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { RobotsPolicy } from './robots-policy';
 import {
   HttpClient,
   PCI_REGIONAL_PATHS,
@@ -16,6 +17,7 @@ const BASE = 'https://pci.example.test';
 describe('PciConcursosSource', () => {
   let get: jest.Mock;
   let sleep: jest.Mock;
+  let isAllowed: jest.Mock;
   let calls: string[];
 
   const source = () =>
@@ -28,11 +30,13 @@ describe('PciConcursosSource', () => {
       },
       { get } as unknown as HttpClient,
       sleep,
+      { isAllowed } as unknown as RobotsPolicy,
     );
 
   beforeEach(() => {
     calls = [];
     sleep = jest.fn().mockResolvedValue(undefined);
+    isAllowed = jest.fn().mockResolvedValue(true);
     get = jest.fn().mockImplementation((url: string) => {
       calls.push(url);
       return Promise.resolve({ data: listing });
@@ -80,6 +84,46 @@ describe('PciConcursosSource', () => {
 
     // The fixture has 8 readable listings and every page returns it.
     expect(vacancies).toHaveLength(8 * PCI_REGIONAL_PATHS.length);
+  });
+
+  it('does not pause for pages it never requested', async () => {
+    isAllowed.mockImplementation((url: string) =>
+      Promise.resolve(url.includes('/centro-oeste/')),
+    );
+
+    await source().fetch();
+
+    // Only one page is requested, so there is nothing to wait between.
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  describe('robots.txt', () => {
+    it('asks robots.txt about every page before requesting it', async () => {
+      await source().fetch();
+
+      expect(isAllowed.mock.calls.map(([url]) => url)).toEqual(
+        PCI_REGIONAL_PATHS.map((region) => `${BASE}/concursos/${region}/`),
+      );
+    });
+
+    it('does not request a page that robots.txt forbids, and still reads the others', async () => {
+      isAllowed.mockImplementation((url: string) =>
+        Promise.resolve(!url.includes('/norte/')),
+      );
+
+      const vacancies = await source().fetch();
+
+      expect(calls).not.toContain(`${BASE}/concursos/norte/`);
+      expect(calls).toHaveLength(PCI_REGIONAL_PATHS.length - 1);
+      expect(vacancies).toHaveLength(8 * (PCI_REGIONAL_PATHS.length - 1));
+    });
+
+    it('fails clearly, without requesting anything, when robots.txt forbids every page', async () => {
+      isAllowed.mockResolvedValue(false);
+
+      await expect(source().fetch()).rejects.toThrow(/robots.txt/i);
+      expect(get).not.toHaveBeenCalled();
+    });
   });
 
   it('keeps the other regions when one page fails', async () => {

@@ -34,17 +34,17 @@ Architecture: hexagonal (ports and adapters) with a pure domain layer, enforced 
 
 Legend: ✅ done · 🚧 in progress · 📋 planned
 
-| Phase                            | Status | Scope                                                                                                                                      |
-| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                                        |
-| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                                    |
-| 2. Architecture and code quality | ✅     | Naming, persistence layer, domain model, validated config and modules, strict TypeScript and lint, architecture rules in CI, docs and ADRs |
-| 3. Messaging and data            | ✅     | Retry queues, migrations, matching in SQL, transactional saves. Vacancy persistence moves to phase 4 with the scraper                      |
-| 4. Vacancy sources               | 🚧     | 2 of 3 steps done: parser and classifier, ingestion pipeline with persisted vacancies. Next: runtime politeness and the source policy      |
-| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                                  |
-| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                                |
-| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                                                                   |
-| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                                                                   |
+| Phase                            | Status | Scope                                                                                                                                                                                     |
+| -------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                                                                                       |
+| 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                                                                                   |
+| 2. Architecture and code quality | ✅     | Naming, persistence layer, domain model, validated config and modules, strict TypeScript and lint, architecture rules in CI, docs and ADRs                                                |
+| 3. Messaging and data            | ✅     | Retry queues, migrations, matching in SQL, transactional saves. Vacancy persistence moves to phase 4 with the scraper                                                                     |
+| 4. Vacancy sources               | ✅     | PCI listing parser, ingestion pipeline with persisted vacancies, polite runtime (robots.txt, locking, weekly layout check). The source policy has one open question before charging users |
+| 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                                                                                 |
+| 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                                                                               |
+| 7. Documentation                 | 📋     | Architecture docs, ADRs in English, demo                                                                                                                                                  |
+| 8. Product features              | 📋     | Pause mode, digest, i18n, billing portal                                                                                                                                                  |
 
 ### Launch milestones
 
@@ -59,6 +59,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
 - Phase 1 complete: new users start inactive, atomic notification idempotency, delivery failures propagate to retries and the DLQ, a single RabbitMQ topology, idempotent Stripe webhooks with the Telegram id on the subscription, and escaped HTML alerts.
 - Phase 2 so far: kebab-case file names; domain and application layers free of TypeORM and NestJS; typed domain errors and an immutable, validated `Preference`; environment validated once at startup (zod) and injected as typed config; one Stripe client and one Telegraf client; the app split into feature modules (`src/modules`).
+- Phase 4 complete. The scraper behaves like a good guest by construction: honest User-Agent, `robots.txt` obeyed (RFC 9309 semantics), paced requests, one lock shared by all instances, listing metadata only with a link back to the source, and **no source enabled by default in production**. A weekly workflow (`npm run scraper:check`) reads the live site and fails if the parser stops understanding it; today it parses 602 vacancies. See ADR 0013, including the open question about reusing the site's data in a paid product.
 - Phase 4: vacancies are now ingested by a use case behind an `IVacancySource` port: each gets a stable id (SHA-256 of source and address), is deduplicated in a `vacancies` table (so a restart no longer re-announces everything), is published to the queue, and alerts carry the organization, areas, salary ceiling, deadline and a link to the listing. Cancelled and expired competitions are skipped. The old scraper is gone.
 - Phase 4 so far: the PCI Concursos listing parser was rewritten for the site's current markup (the old selectors matched nothing, which is why no vacancies were found), tested against a fixture and checked against the live page (all 346 listings of the Southeast page are understood). The area classifier matches whole words instead of substrings, and a vacancy now belongs to every area with evidence.
 - Phase 3 complete. Saving a subscriber is transactional and keeps preference ids stable. Fixed along the way: removed preferences were silently left behind as orphan rows (the ORM option was on the wrong side of the relation); they are now deleted, and deleting a subscriber cascades.
@@ -70,13 +71,20 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - New `npm run smoke`: end-to-end test of the real app against real MySQL and RabbitMQ with a fake Telegram Bot API (`/start`, signed Stripe webhook, button callbacks, vacancy delivery, idempotency, dead-lettering).
 - Declared the missing `amqplib` dependency (the app could not start on a clean install).
 
+## Data sources and fair use
+
+Vacancies come from public listings on third-party sites. The scraper identifies itself, obeys `robots.txt`, limits its request rate and reads only listing metadata, and every alert links back to the source. Nothing is scraped in production unless an operator enables it with `SCRAPER_ENABLED_SOURCES`.
+
+**Before charging users, get the source's permission or switch to sources that allow reuse** (see [ADR 0013](docs/adr/0013-vacancy-source-policy.md)).
+
 ## Known limitations
 
 These are known issues in the current code and are scheduled in the phases above:
 
 - **Not yet run with real Telegram and Stripe credentials, nor inside the app container** (M1 blocker). The whole flow is verified end to end against real MySQL and RabbitMQ with a fake Telegram API (`npm run smoke`).
 - Bot command replies still use legacy Markdown and Portuguese strings are inline (i18n comes later).
-- The scraper reads a single region and its area classifier produces false positives.
+- Listings titled "Vários Cargos" (about 40% of a regional page) carry no role information, so they only reach subscribers who follow any area.
+- The PCI Concursos data is fine for development and a closed beta, but reusing it in a paid product needs the site's permission (ADR 0013).
 - Test coverage is limited to the domain and one use case.
 
 ## Getting started

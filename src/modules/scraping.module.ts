@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { IngestVacanciesUseCase } from '../application/use-cases/ingest-vacancies.use-case';
 import { vacancyQueueOptions } from '../infrastructure/messaging/rabbitmq.config';
 import { RabbitMqVacancyPublisher } from '../infrastructure/messaging/rabbitmq-vacancy.publisher';
-import { PciConcursosSource } from '../infrastructure/scraper/pci-concursos.source';
+import { createVacancySources } from '../infrastructure/scraper/vacancy-sources.factory';
 import { VacancyIngestionScheduler } from '../infrastructure/scraper/vacancy-ingestion.scheduler';
 import { AppConfig } from '../shared/config/app.config';
 import { provideUseCase } from '../shared/provide-use-case';
@@ -40,16 +40,8 @@ import { PersistenceModule } from './persistence.module';
     { provide: VACANCY_PUBLISHER, useClass: RabbitMqVacancyPublisher },
     {
       provide: VACANCY_SOURCES,
-      useFactory: () => [
-        new PciConcursosSource({
-          baseUrl: 'https://www.pciconcursos.com.br',
-          // Honest identification: the site can see who reads it and where to complain.
-          userAgent:
-            'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/alertas-concursos-bot)',
-          timeoutMs: 15_000,
-          delayMs: 2_000,
-        }),
-      ],
+      inject: [APP_CONFIG],
+      useFactory: createVacancySources,
     },
     provideUseCase(IngestVacanciesUseCase, [
       VACANCY_SOURCES,

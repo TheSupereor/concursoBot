@@ -64,6 +64,7 @@ Axios or amqplib). Use cases are plain classes registered with Nest through `pro
 ```mermaid
 sequenceDiagram
   participant Sc as IngestVacanciesUseCase (cron)
+  participant Lock as MySQL job lock
   participant Src as Vacancy source (PCI)
   participant Vac as vacancies table
   participant MQ as RabbitMQ
@@ -72,7 +73,8 @@ sequenceDiagram
   participant Log as notification_logs
   participant Tg as Telegram
 
-  Sc->>Src: fetch listings
+  Sc->>Lock: take the lock (one instance at a time)
+  Sc->>Src: fetch listings (robots.txt obeyed, paced)
   Src-->>Sc: scraped vacancies
   Sc->>Sc: classify areas, build a stable id
   Sc->>Vac: already known?
@@ -151,5 +153,6 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 
 ## Known limitations
 
-See the README. In short: listings titled "Vários Cargos" carry no role information, and there is no
-politeness layer (robots.txt, locking between instances) yet. Both are tracked in the project phases.
+See the README. In short: listings titled "Vários Cargos" carry no role information, and the only source
+today is a commercial site whose data should not be reused in a paid product without permission
+([ADR 0013](adr/0013-vacancy-source-policy.md)).
