@@ -24,6 +24,20 @@ export interface AppConfig {
     /** Chat that receives operational alerts such as dead-letter queue growth. */
     readonly adminId?: string;
   };
+  readonly scraper: {
+    /** Vacancy sources to read. None are enabled by default in production. */
+    readonly enabledSources: readonly string[];
+    readonly intervalMinutes: number;
+    /** Run one ingestion right after start-up instead of waiting for the first interval. */
+    readonly runOnStart: boolean;
+    /** Sent on every request so the sites can see who is reading them and why. */
+    readonly userAgent: string;
+    readonly pci: {
+      readonly baseUrl: string;
+      /** Pause between two pages of the same site. */
+      readonly pageDelayMs: number;
+    };
+  };
   readonly stripe: {
     readonly secretKey: string;
     readonly priceId: string;
@@ -34,6 +48,21 @@ export interface AppConfig {
 }
 
 const DEV_RABBITMQ_URL = 'amqp://guest:guest@localhost:5672';
+
+/** Vacancy sources the application knows how to read. */
+export const KNOWN_VACANCY_SOURCES = ['pci-concursos'] as const;
+
+/** Shortest interval between two scraping runs in production. */
+const MIN_PRODUCTION_INTERVAL_MINUTES = 15;
+
+const DEFAULT_USER_AGENT =
+  'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/alertas-concursos-bot)';
+
+const parseSourceList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 
 const required = (name: string) =>
   z.string({ error: `${name} is required` }).min(1, `${name} is required`);
@@ -72,9 +101,36 @@ const envSchema = databaseEnvSchema
     STRIPE_WEBHOOK_SECRET: required('STRIPE_WEBHOOK_SECRET'),
     STRIPE_SUCCESS_URL: z.string().min(1).optional(),
     STRIPE_CANCEL_URL: z.string().min(1).optional(),
+
+    SCRAPER_ENABLED_SOURCES: z.string().optional(),
+    SCRAPER_INTERVAL_MINUTES: z.coerce.number().positive().default(60),
+    SCRAPER_RUN_ON_START: z.enum(['true', 'false']).default('false'),
+    SCRAPER_USER_AGENT: z.string().min(1).default(DEFAULT_USER_AGENT),
+    PCI_BASE_URL: z.string().min(1).default('https://www.pciconcursos.com.br'),
+    PCI_PAGE_DELAY_MS: z.coerce.number().int().min(0).default(2000),
   })
   .superRefine((env, ctx) => {
+    const unknown = parseSourceList(env.SCRAPER_ENABLED_SOURCES ?? '').filter(
+      (source) =>
+        !(KNOWN_VACANCY_SOURCES as readonly string[]).includes(source),
+    );
+    if (unknown.length > 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SCRAPER_ENABLED_SOURCES'],
+        message: `unknown source(s): ${unknown.join(', ')} (known: ${KNOWN_VACANCY_SOURCES.join(', ')})`,
+      });
+    }
+
     if (env.NODE_ENV !== 'production') return;
+
+    if (env.SCRAPER_INTERVAL_MINUTES < MIN_PRODUCTION_INTERVAL_MINUTES) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SCRAPER_INTERVAL_MINUTES'],
+        message: `must be at least ${MIN_PRODUCTION_INTERVAL_MINUTES} minutes in production, to stay gentle with the sites`,
+      });
+    }
 
     // Production must be explicit: no development defaults for anything security-relevant.
     const mustBeSet = [
@@ -166,6 +222,20 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       botToken: e.TELEGRAM_BOT_TOKEN,
       apiRoot: e.TELEGRAM_API_ROOT,
       adminId: e.ADMIN_TELEGRAM_ID,
+    },
+    scraper: {
+      // Reading a third-party site is a choice, not a default: in production nothing is
+      // enabled until an operator lists the sources on purpose.
+      enabledSources:
+        e.SCRAPER_ENABLED_SOURCES === undefined
+          ? e.NODE_ENV === 'production'
+            ? []
+            : [...KNOWN_VACANCY_SOURCES]
+          : parseSourceList(e.SCRAPER_ENABLED_SOURCES),
+      intervalMinutes: e.SCRAPER_INTERVAL_MINUTES,
+      runOnStart: e.SCRAPER_RUN_ON_START === 'true',
+      userAgent: e.SCRAPER_USER_AGENT,
+      pci: { baseUrl: e.PCI_BASE_URL, pageDelayMs: e.PCI_PAGE_DELAY_MS },
     },
     stripe: {
       secretKey: e.STRIPE_SECRET_KEY,

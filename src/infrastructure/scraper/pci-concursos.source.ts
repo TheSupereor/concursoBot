@@ -5,6 +5,7 @@ import {
   ScrapedVacancy,
 } from '../../application/ports/vacancy-source.port';
 import { parsePciListing } from './pci-concursos.parser';
+import { RobotsPolicy } from './robots-policy';
 
 export const PCI_SOURCE_ID = 'pci-concursos';
 
@@ -57,17 +58,34 @@ export class PciConcursosSource implements IVacancySource {
     private readonly options: PciSourceOptions,
     private readonly http: HttpClient = axios,
     private readonly sleep: (ms: number) => Promise<void> = wait,
+    private readonly robots: Pick<RobotsPolicy, 'isAllowed'> = {
+      isAllowed: () => Promise.resolve(true),
+    },
   ) {}
 
   async fetch(): Promise<ScrapedVacancy[]> {
     const vacancies: ScrapedVacancy[] = [];
     let pagesRead = 0;
+    let pagesBlocked = 0;
+    let requested = false;
 
-    for (const [index, region] of PCI_REGIONAL_PATHS.entries()) {
-      if (index > 0) await this.sleep(this.options.delayMs);
+    for (const region of PCI_REGIONAL_PATHS) {
+      const url = `${this.options.baseUrl}/concursos/${region}/`;
+      if (!(await this.robots.isAllowed(url))) {
+        // Not even requested: the site asked robots not to read this page.
+        this.logger.warn(
+          `robots.txt does not allow reading ${url}; skipping it`,
+        );
+        pagesBlocked++;
+        continue;
+      }
+
+      // Pause only between two real requests.
+      if (requested) await this.sleep(this.options.delayMs);
+      requested = true;
 
       try {
-        const html = await this.readPage(region);
+        const html = await this.readPage(url);
         pagesRead++;
         vacancies.push(...parsePciListing(html, this.options.baseUrl));
       } catch (error) {
@@ -77,6 +95,11 @@ export class PciConcursosSource implements IVacancySource {
       }
     }
 
+    if (pagesRead === 0 && pagesBlocked > 0) {
+      throw new Error(
+        'robots.txt does not allow reading any PCI Concursos listing',
+      );
+    }
     if (pagesRead === 0) {
       throw new Error('No page could be read from PCI Concursos');
     }
@@ -88,18 +111,15 @@ export class PciConcursosSource implements IVacancySource {
     return vacancies;
   }
 
-  private async readPage(region: string): Promise<string> {
-    const response = await this.http.get(
-      `${this.options.baseUrl}/concursos/${region}/`,
-      {
-        timeout: this.options.timeoutMs,
-        headers: {
-          'User-Agent': this.options.userAgent,
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-        },
-        responseType: 'text',
+  private async readPage(url: string): Promise<string> {
+    const response = await this.http.get(url, {
+      timeout: this.options.timeoutMs,
+      headers: {
+        'User-Agent': this.options.userAgent,
+        'Accept-Language': 'pt-BR,pt;q=0.9',
       },
-    );
+      responseType: 'text',
+    });
     return response.data;
   }
 }

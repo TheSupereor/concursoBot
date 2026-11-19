@@ -4,6 +4,7 @@ import { AppConfig } from '../shared/config/app.config';
 import {
   APP_CONFIG,
   NOTIFICATION_LOG_REPOSITORY,
+  JOB_LOCK,
   PROCESSED_EVENT_REPOSITORY,
   SUBSCRIBER_REPOSITORY,
   VACANCY_REPOSITORY,
@@ -12,6 +13,7 @@ import { entities } from '../infrastructure/persistence/entities';
 import { migrations } from '../infrastructure/persistence/migrations';
 import { MysqlNotificationLogRepository } from '../infrastructure/persistence/repositories/mysql-notification-log.repository';
 import { MysqlProcessedEventRepository } from '../infrastructure/persistence/repositories/mysql-processed-event.repository';
+import { MysqlJobLock } from '../infrastructure/persistence/mysql-job-lock';
 import { MysqlVacancyRepository } from '../infrastructure/persistence/repositories/mysql-vacancy.repository';
 import { MysqlSubscriberRepository } from '../infrastructure/persistence/repositories/mysql-subscriber.repository';
 
@@ -43,12 +45,14 @@ import { MysqlSubscriberRepository } from '../infrastructure/persistence/reposit
       useClass: MysqlProcessedEventRepository,
     },
     { provide: VACANCY_REPOSITORY, useClass: MysqlVacancyRepository },
+    { provide: JOB_LOCK, useClass: MysqlJobLock },
   ],
   exports: [
     SUBSCRIBER_REPOSITORY,
     NOTIFICATION_LOG_REPOSITORY,
     PROCESSED_EVENT_REPOSITORY,
     VACANCY_REPOSITORY,
+    JOB_LOCK,
   ],
 })
 export class PersistenceModule {}

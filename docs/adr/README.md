@@ -18,3 +18,4 @@ supersedes it.
 | [0010](0010-matching-in-sql.md)                    | Match subscribers in SQL, domain rule stays the source of truth        | Accepted                                                           |
 | [0011](0011-transactional-save-with-stable-ids.md) | Transactional save with stable preference ids                          | Accepted                                                           |
 | [0012](0012-vacancy-ingestion.md)                  | Vacancy ingestion: stable ids, publish before recording, several areas | Accepted                                                           |
+| [0013](0013-vacancy-source-policy.md)              | Vacancy source policy: polite by construction, opt-in in production    | Accepted, one question open                                        |

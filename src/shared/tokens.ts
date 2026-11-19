@@ -13,3 +13,4 @@ export const LOGGER = 'ILogger';
 export const VACANCY_REPOSITORY = 'IVacancyRepository';
 export const VACANCY_PUBLISHER = 'IVacancyPublisher';
 export const VACANCY_SOURCES = 'VACANCY_SOURCES';
+export const JOB_LOCK = 'IJobLock';

@@ -37,6 +37,13 @@ database per spec file, built by the real migrations:
 npm run test:integration
 ```
 
+The scraper depends on a third-party page layout. `npm run scraper:check` reads the live site
+(five polite requests) and fails when the parser no longer understands it; CI runs it weekly:
+
+```bash
+npm run build && npm run scraper:check
+```
+
 The end-to-end smoke test runs the real app against MySQL and RabbitMQ with a fake Telegram API:
 
 ```bash

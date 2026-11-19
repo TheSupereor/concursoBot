@@ -1,0 +1,26 @@
+name: Scraper health
+
+# The scraped site is not an API: its markup changes without notice. Once a week this reads the
+# real listings (five polite requests) and fails if the parser no longer understands them, so a
+# layout change is noticed in days instead of months.
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-source:
+    name: Parser still understands the live site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm run scraper:check

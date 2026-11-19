@@ -14,6 +14,7 @@ const Stripe = require(path.join(root, 'node_modules', 'stripe'));
 const assert = require('assert');
 
 const BOT_PORT = 9999;
+const PCI_PORT = 9998;
 const APP_PORT = 3100;
 const WEBHOOK_SECRET = 'whsec_smoke';
 // Isolated resources, so the smoke test never touches data from a manual run.
@@ -28,6 +29,122 @@ let pending = [];
 let updateId = 1;
 const chat = { id: USER, type: 'private' };
 const from = { id: USER, is_bot: false, first_name: 'Tester' };
+
+// ---- fake PCI Concursos: robots.txt and regional listings (same markup as the real site)
+const pciRequests = []; // { path, userAgent }
+let pciShowsTiVacancy = false; // flipped by the script once the subscriber is ready
+
+const brDate = (daysFromNow) => {
+  const d = new Date(Date.now() + daysFromNow * 86400000);
+  const p = (n) => String(n).padStart(2, '0');
+  return (
+    p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear()
+  );
+};
+
+const listingItem = ({
+  slug,
+  org,
+  title,
+  uf,
+  summary,
+  roles,
+  education,
+  deadline,
+}) =>
+  '<div class="ca"><a href="http://localhost:' +
+  PCI_PORT +
+  '/noticias/' +
+  slug +
+  '" title="' +
+  title +
+  '">' +
+  org +
+  '</a>' +
+  '<div class="cc">' +
+  uf +
+  '</div>' +
+  '<div class="cd">' +
+  summary +
+  '<br><span>' +
+  roles +
+  '<br><span>' +
+  education +
+  '</span></span></div>' +
+  '<div class="ce"><span>' +
+  deadline +
+  '</span></div></div>';
+
+const listingFor = (region) => {
+  const items = [
+    // generic "Varios Cargos" listing: classified OUTROS, only reaches QUALQUER subscribers
+    listingItem({
+      slug: 'generic-' + region,
+      org: 'Prefeitura Generica ' + region,
+      title: 'Prefeitura Generica abre concurso',
+      uf: 'SP',
+      summary: '10 vagas até R$ 2.000,00',
+      roles: 'Vários Cargos',
+      education: 'Médio',
+      deadline: brDate(30),
+    }),
+    listingItem({
+      slug: 'cancelled-' + region,
+      org: 'Prefeitura Cancelada ' + region,
+      title: 'Concurso cancelado',
+      uf: 'SP',
+      summary: '5 vagas até R$ 9.000,00',
+      roles: 'Analista de Sistemas',
+      education: 'Superior',
+      deadline: 'Cancelado',
+    }),
+    listingItem({
+      slug: 'expired-' + region,
+      org: 'Prefeitura Encerrada ' + region,
+      title: 'Inscricoes encerradas',
+      uf: 'SP',
+      summary: '5 vagas até R$ 9.000,00',
+      roles: 'Analista de Sistemas',
+      education: 'Superior',
+      deadline: brDate(-1),
+    }),
+  ];
+  if (pciShowsTiVacancy && region === 'sudeste') {
+    items.push(
+      listingItem({
+        slug: 'camara-smoke',
+        org: 'Câmara de Exemplo Smoke',
+        title: 'Câmara de Exemplo abre vaga para Analista de Sistemas',
+        uf: 'MG',
+        summary: '2 vagas até R$ 6.500,00',
+        roles: 'Analista de Sistemas',
+        education: 'Superior',
+        deadline: brDate(20),
+      }),
+    );
+  }
+  return (
+    '<html><body><div class="da">' + items.join('') + '</div></body></html>'
+  );
+};
+
+const pciSite = http.createServer((req, res) => {
+  pciRequests.push({ path: req.url, userAgent: req.headers['user-agent'] });
+  if (req.url === '/robots.txt') {
+    res.setHeader('content-type', 'text/plain');
+    // This bot is not welcome in the centro-oeste listing.
+    return res.end(
+      'User-agent: *\nAllow: /\n\nUser-agent: RadarConcursosBot\nDisallow: /concursos/centro-oeste/\n',
+    );
+  }
+  const match = /^\/concursos\/([a-z-]+)\/$/.exec(req.url);
+  if (!match) {
+    res.statusCode = 404;
+    return res.end();
+  }
+  res.setHeader('content-type', 'text/html');
+  res.end(listingFor(match[1]));
+});
 
 const fake = http.createServer((req, res) => {
   let body = '';
@@ -127,6 +244,7 @@ const sql = (q) => mysql(SMOKE_DB, q);
     await cleanup.close();
   }
   await new Promise((r) => fake.listen(BOT_PORT, r));
+  await new Promise((r) => pciSite.listen(PCI_PORT, r));
   const env = {
     ...process.env,
     NODE_ENV: 'development',
@@ -140,6 +258,11 @@ const sql = (q) => mysql(SMOKE_DB, q);
     RABBITMQ_QUEUE: SMOKE_QUEUE,
     TELEGRAM_BOT_TOKEN: '123:smoke',
     TELEGRAM_API_ROOT: `http://localhost:${BOT_PORT}`,
+    // The scraper reads the fake site every 6 seconds so the scenario does not have to wait.
+    SCRAPER_ENABLED_SOURCES: 'pci-concursos',
+    SCRAPER_INTERVAL_MINUTES: '0.1',
+    PCI_BASE_URL: `http://localhost:${PCI_PORT}`,
+    PCI_PAGE_DELAY_MS: '0',
     STRIPE_SECRET_KEY: 'sk_test_smoke',
     STRIPE_PRICE_ID: 'price_smoke',
     STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET,
@@ -153,6 +276,7 @@ const sql = (q) => mysql(SMOKE_DB, q);
       app.kill();
     } catch {}
     fake.close();
+    pciSite.close();
   };
   try {
     await waitFor(
@@ -361,6 +485,77 @@ const sql = (q) => mysql(SMOKE_DB, q);
     );
     assert.strictEqual(deadLettered, 1);
     assert.strictEqual(dlq.consumerCount, 0);
+    // The scraper has been reading the fake site all along. Until now it offered no IT job for
+    // this subscriber; now one appears and must be announced exactly once.
+    const alertsBefore = sent.filter((m) =>
+      /Câmara de Exemplo Smoke/.test(m.text),
+    ).length;
+    assert.strictEqual(alertsBefore, 0);
+    pciShowsTiVacancy = true;
+    await waitFor(
+      'scraped vacancy alert',
+      () => sent.some((m) => /Câmara de Exemplo Smoke/.test(m.text)),
+      30000,
+    );
+    const scraped = sent.find((m) => /Câmara de Exemplo Smoke/.test(m.text));
+    assert.strictEqual(scraped.parse_mode, 'HTML');
+    assert.ok(scraped.text.includes('Analista de Sistemas'));
+    assert.ok(scraped.text.includes('até R$ 6.500,00'));
+    assert.ok(scraped.text.includes('MG'));
+    assert.ok(
+      scraped.text.includes(
+        '<a href="http://localhost:' +
+          PCI_PORT +
+          '/noticias/camara-smoke">Ver edital</a>',
+      ),
+    );
+    assert.strictEqual(
+      sql("select areas from vacancies where url like '%camara-smoke'"),
+      'TI',
+    );
+    assert.strictEqual(
+      sql("select source from vacancies where url like '%camara-smoke'"),
+      'pci-concursos',
+    );
+
+    // Cancelled, expired and generic listings are read but never announced to this subscriber.
+    assert.ok(
+      !sent.some((m) => /Prefeitura (Cancelada|Encerrada)/.test(m.text)),
+    );
+    assert.strictEqual(
+      sql(
+        "select count(*) from vacancies where url like '%cancelled-%' or url like '%expired-%'",
+      ),
+      '0',
+    );
+    assert.ok(!sent.some((m) => /Prefeitura Generica/.test(m.text)));
+
+    // Several more runs must not announce it again (persistent dedupe), and robots.txt is obeyed.
+    await new Promise((r) => setTimeout(r, 14000));
+    assert.strictEqual(
+      sent.filter((m) => /Câmara de Exemplo Smoke/.test(m.text)).length,
+      1,
+    );
+    assert.ok(pciRequests.some((r) => r.path === '/robots.txt'));
+    assert.ok(
+      !pciRequests.some((r) => r.path === '/concursos/centro-oeste/'),
+      'robots.txt was ignored',
+    );
+    assert.ok(pciRequests.some((r) => r.path === '/concursos/sul/'));
+    assert.ok(
+      pciRequests.every((r) => /RadarConcursosBot/.test(r.userAgent || '')),
+      'missing or wrong User-Agent',
+    );
+    const runs = pciRequests.filter(
+      (r) => r.path === '/concursos/sudeste/',
+    ).length;
+    assert.ok(runs >= 2, 'expected several scraping runs, got ' + runs);
+    console.log(
+      '9. scraper read the site ' +
+        runs +
+        ' times: IT vacancy announced once with its link, cancelled/expired/generic ones not, robots.txt and User-Agent respected',
+    );
+
     await conn.close();
     console.log('\nSMOKE TEST PASSED');
   } catch (e) {
