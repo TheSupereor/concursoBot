@@ -16,7 +16,7 @@ describe('SignUpSubscriberUseCase', () => {
         saved.push(subscriber);
       },
       searchByTelegramId: async () => existing,
-      searchActiveSubscribers: async () => [],
+      searchInterestedIn: async () => [],
     };
   });
 

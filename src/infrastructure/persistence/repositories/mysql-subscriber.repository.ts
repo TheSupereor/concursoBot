@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ISubscriberRepository } from '../../../domain/ports/subscriber-repository.port';
 import { Subscriber } from '../../../domain/entities/subscriber';
+import { Vacancy } from '../../../domain/entities/vacancy';
 import { SubscriberOrmEntity } from '../entities/subscriber.orm-entity';
 import { SubscriberMapper } from '../mappers/subscriber.mapper';
 
@@ -13,11 +14,33 @@ export class MysqlSubscriberRepository implements ISubscriberRepository {
     private readonly ormRepository: Repository<SubscriberOrmEntity>,
   ) {}
 
-  async searchActiveSubscribers(): Promise<Subscriber[]> {
-    const rows = await this.ormRepository.find({
-      where: { isActive: true },
-      relations: ['preferences'],
-    });
+  /**
+   * Same rule as `Subscriber.hasInterest`, evaluated by the database so a vacancy does not
+   * load every subscriber: the area matches or is QUALQUER, the region matches or is BR, and
+   * the vacancy pays at least the preference's minimum. The join still loads every preference
+   * of each match, so callers get complete aggregates. An integration test checks that this
+   * query and the domain rule agree.
+   */
+  async searchInterestedIn(vacancy: Vacancy): Promise<Subscriber[]> {
+    const rows = await this.ormRepository
+      .createQueryBuilder('subscriber')
+      .leftJoinAndSelect('subscriber.preferences', 'preference')
+      .where('subscriber.isActive = :active', { active: true })
+      .andWhere(
+        `EXISTS (
+          SELECT 1 FROM preferences matching
+          WHERE matching.subscriberTelegramId = subscriber.telegramId
+            AND matching.area IN (:...areas)
+            AND matching.region IN (:...regions)
+            AND matching.minimumSalary <= :salary
+        )`,
+        {
+          areas: [vacancy.area, 'QUALQUER'],
+          regions: [vacancy.region, 'BR'],
+          salary: vacancy.salary.value,
+        },
+      )
+      .getMany();
 
     return rows.map((row) => SubscriberMapper.toDomain(row));
   }

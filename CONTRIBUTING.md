@@ -30,6 +30,13 @@ npm run test:ci
 npm run build
 ```
 
+Integration tests run against a real MySQL (`docker compose up -d mysql`) and create a throwaway
+database per spec file, built by the real migrations:
+
+```bash
+npm run test:integration
+```
+
 The end-to-end smoke test runs the real app against MySQL and RabbitMQ with a fake Telegram API:
 
 ```bash

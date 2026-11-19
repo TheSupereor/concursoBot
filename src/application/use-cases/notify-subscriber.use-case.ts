@@ -23,12 +23,12 @@ export class NotifySubscriberUseCase {
    * subscribers could not be served yet, so the message is retried instead of acknowledged.
    */
   async execute(newVacancy: Vacancy): Promise<void> {
-    const activeSubscribers =
-      await this.subscriberRepository.searchActiveSubscribers();
+    const candidates =
+      await this.subscriberRepository.searchInterestedIn(newVacancy);
 
     let pendingRetries = 0;
 
-    for (const subscriber of activeSubscribers) {
+    for (const subscriber of candidates) {
       // The business rule for "is this subscriber interested" lives in the domain.
       if (!subscriber.hasInterest(newVacancy)) continue;
 

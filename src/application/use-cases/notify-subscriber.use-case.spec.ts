@@ -70,7 +70,7 @@ describe('NotifySubscriberUseCase', () => {
     subscribers = {
       save: jest.fn(),
       searchByTelegramId: jest.fn(),
-      searchActiveSubscribers: jest.fn(),
+      searchInterestedIn: jest.fn(),
     };
     notifier = {
       sendVacancyAlert: jest.fn().mockResolvedValue({ status: 'sent' }),
@@ -84,7 +84,7 @@ describe('NotifySubscriberUseCase', () => {
   it('notifies only the subscribers interested in the vacancy', async () => {
     const tiSubscriber = interested('telegram-1', 'TI');
     const healthSubscriber = interested('telegram-2', 'SAUDE');
-    subscribers.searchActiveSubscribers.mockResolvedValue([
+    subscribers.searchInterestedIn.mockResolvedValue([
       tiSubscriber,
       healthSubscriber,
     ]);
@@ -99,7 +99,7 @@ describe('NotifySubscriberUseCase', () => {
   });
 
   it('marks the notification as sent after a successful delivery', async () => {
-    subscribers.searchActiveSubscribers.mockResolvedValue([
+    subscribers.searchInterestedIn.mockResolvedValue([
       interested('telegram-1'),
     ]);
 
@@ -110,7 +110,7 @@ describe('NotifySubscriberUseCase', () => {
 
   describe('idempotency', () => {
     it('never delivers the same vacancy to the same subscriber twice', async () => {
-      subscribers.searchActiveSubscribers.mockResolvedValue([
+      subscribers.searchInterestedIn.mockResolvedValue([
         interested('telegram-1'),
       ]);
 
@@ -121,7 +121,7 @@ describe('NotifySubscriberUseCase', () => {
     });
 
     it('delivers once when two consumers process the same vacancy concurrently', async () => {
-      subscribers.searchActiveSubscribers.mockResolvedValue([
+      subscribers.searchInterestedIn.mockResolvedValue([
         interested('telegram-1'),
       ]);
       // Keep delivery pending so the second consumer runs while the first still owns the claim.
@@ -144,7 +144,7 @@ describe('NotifySubscriberUseCase', () => {
     });
 
     it('can retry after a transient failure without duplicating deliveries', async () => {
-      subscribers.searchActiveSubscribers.mockResolvedValue([
+      subscribers.searchInterestedIn.mockResolvedValue([
         interested('telegram-1'),
       ]);
       deliverWith({ status: 'retryable' });
@@ -161,7 +161,7 @@ describe('NotifySubscriberUseCase', () => {
     });
 
     it('releases the claim when the adapter throws unexpectedly', async () => {
-      subscribers.searchActiveSubscribers.mockResolvedValue([
+      subscribers.searchInterestedIn.mockResolvedValue([
         interested('telegram-1'),
       ]);
       notifier.sendVacancyAlert.mockRejectedValueOnce(new Error('boom'));
@@ -174,7 +174,7 @@ describe('NotifySubscriberUseCase', () => {
 
   describe('delivery failures', () => {
     it('keeps serving other subscribers when one delivery is retryable, then fails for retry', async () => {
-      subscribers.searchActiveSubscribers.mockResolvedValue([
+      subscribers.searchInterestedIn.mockResolvedValue([
         interested('telegram-1'),
         interested('telegram-2'),
       ]);
@@ -195,7 +195,7 @@ describe('NotifySubscriberUseCase', () => {
     it.each(['blocked', 'invalid'] as const)(
       'records a %s delivery as failed, without retrying it',
       async (status) => {
-        subscribers.searchActiveSubscribers.mockResolvedValue([
+        subscribers.searchInterestedIn.mockResolvedValue([
           interested('telegram-1'),
         ]);
         deliverWith({ status });

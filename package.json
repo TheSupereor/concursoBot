@@ -28,7 +28,8 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/infrastructure/persistence/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/infrastructure/persistence/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infrastructure/persistence/data-source.ts",
-    "migration:check": "typeorm-ts-node-commonjs schema:log -d src/infrastructure/persistence/data-source.ts"
+    "migration:check": "typeorm-ts-node-commonjs schema:log -d src/infrastructure/persistence/data-source.ts",
+    "test:integration": "jest --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -96,7 +97,11 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "\\.integration\\.spec\\.ts$"
+    ]
   },
   "engines": {
     "node": ">=22"

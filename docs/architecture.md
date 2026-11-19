@@ -135,13 +135,14 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 
 ## Testing strategy
 
-| Level             | What                                                                                 | Where           |
-| ----------------- | ------------------------------------------------------------------------------------ | --------------- |
-| Unit              | Domain rules, use cases with in-memory ports, mappers, formatters, config validation | `*.spec.ts`     |
-| Integration-style | Webhook with signed payloads, Nest dependency injection of controllers               | `*.spec.ts`     |
-| End to end        | The real app against real MySQL and RabbitMQ with a fake Telegram Bot API            | `npm run smoke` |
+| Level               | What                                                                                                                                                   | Where                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Unit                | Domain rules, use cases with in-memory ports, mappers, formatters, config validation                                                                   | `*.spec.ts`                                         |
+| Integration-style   | Webhook with signed payloads, Nest dependency injection of controllers                                                                                 | `*.spec.ts`                                         |
+| Integration (MySQL) | Repositories against a real database built by the migrations: SQL matching versus the domain rule, concurrent idempotency claims, the Stripe event log | `*.integration.spec.ts`, `npm run test:integration` |
+| End to end          | The real app against real MySQL and RabbitMQ with a fake Telegram Bot API, including retries through the TTL queues                                    | `npm run smoke`                                     |
 
 ## Known limitations
 
-See the README. In short: the scraper reads one region and subscribers are still matched in memory
-rather than in SQL. These are tracked in the project phases.
+See the README. In short: the scraper reads one region, and saving a subscriber rewrites its
+preferences. These are tracked in the project phases.

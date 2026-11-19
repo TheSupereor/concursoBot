@@ -39,7 +39,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 | 0. Baseline and repo hygiene     | ✅     | CI, license, commit conventions, Dockerfile, README                                                                                        |
 | 1. Critical fixes                | ✅     | 9 of 9 fixes done. Billing, idempotency and messaging bugs, each with a regression test                                                    |
 | 2. Architecture and code quality | ✅     | Naming, persistence layer, domain model, validated config and modules, strict TypeScript and lint, architecture rules in CI, docs and ADRs |
-| 3. Messaging and data            | 🚧     | 2 of 4 steps done: retry queues, migrations. Next: matching in SQL, transactional saves                                                    |
+| 3. Messaging and data            | 🚧     | 3 of 4 steps done: retry queues, migrations, matching in SQL. Next: transactional saves                                                    |
 | 4. Vacancy sources               | 📋     | Source adapters, tested parsers, responsible scraping                                                                                      |
 | 5. Testing and CI                | 📋     | Integration tests with real MySQL and RabbitMQ containers                                                                                  |
 | 6. Security, GDPR and operations | 📋     | Hardened image, health checks, metrics, data export/erasure                                                                                |
@@ -59,6 +59,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
 - Phase 1 complete: new users start inactive, atomic notification idempotency, delivery failures propagate to retries and the DLQ, a single RabbitMQ topology, idempotent Stripe webhooks with the Telegram id on the subscription, and escaped HTML alerts.
 - Phase 2 so far: kebab-case file names; domain and application layers free of TypeORM and NestJS; typed domain errors and an immutable, validated `Preference`; environment validated once at startup (zod) and injected as typed config; one Stripe client and one Telegraf client; the app split into feature modules (`src/modules`).
+- Phase 3: vacancies are matched to subscribers in SQL (`EXISTS` query plus two indexes) instead of loading every subscriber; an integration test against a real MySQL checks the query agrees with the domain rule over 45 combinations. New `npm run test:integration` (MySQL) also covers the claim-first idempotency and the Stripe event log with concurrency.
 - Phase 3: the schema is now owned by TypeORM migrations (`synchronize` is off): an initial migration generated from the entities, `npm run migration:*` scripts and a drift check. A database created by the old setup must be recreated (`docker compose down -v`).
 - Phase 3 so far: retries go through TTL queues (2s, 4s) instead of sleeping inside the handler, verified end to end against a real RabbitMQ (`npm run smoke` makes Telegram fail twice and checks the alert is delivered after the retries, with the DLQ untouched).
 - Phase 2 complete. Architecture rules (`npm run arch:check`) now run in CI and fail the build if the domain or application layers import a framework or an outer layer; `docs/architecture.md` and nine ADRs in English document the design.
@@ -95,6 +96,7 @@ npm run smoke         # end-to-end test (needs `docker compose up -d mysql rabbi
 npm run test:ci       # unit tests with coverage
 npm run lint:check
 npm run arch:check    # layering rules (dependency-cruiser)
+npm run test:integration # tests against a real MySQL (docker compose up -d mysql)
 npm run migration:run # apply database migrations (the app also runs them at startup)
 npm run typecheck
 ```
