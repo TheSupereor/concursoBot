@@ -1,4 +1,5 @@
 import * as amqp from 'amqplib';
+import { RETRY_DELAYS_MS } from './retry-policy';
 
 export const DEAD_LETTER_QUEUE = 'concursos.dlq';
 
@@ -13,26 +14,54 @@ export const vacancyQueueOptions = {
   deadLetterRoutingKey: DEAD_LETTER_QUEUE,
 } as const;
 
+/** Name of the TTL queue that holds a message for `delayMs` before it returns to the main queue. */
+export const retryQueueName = (mainQueue: string, delayMs: number): string =>
+  `${mainQueue}.retry.${delayMs / 1000}s`;
+
 interface QueueDeclarer {
-  assertQueue(queue: string, options: { durable: boolean }): Promise<unknown>;
+  assertQueue(
+    queue: string,
+    options: {
+      durable: boolean;
+      messageTtl?: number;
+      deadLetterExchange?: string;
+      deadLetterRoutingKey?: string;
+    },
+  ): Promise<unknown>;
 }
 
 /**
- * Declares the dead-letter queue so rejected messages are retained. The DLQ must have
- * no consumer: messages stay ready for inspection and manual replay, and the DLQ monitor
- * relies on that count.
+ * Declares the queues that surround the main vacancy queue:
+ *
+ *  - the dead-letter queue, which retains rejected messages. It has no consumer, so messages
+ *    stay ready for inspection and manual replay and the DLQ monitor can count them;
+ *  - one retry queue per backoff delay. A message waits there for its TTL and is then
+ *    dead-lettered back to the main queue, so a retry never occupies a consumer slot.
  */
-export async function assertDeadLetterQueue(
+export async function assertTopology(
   channel: QueueDeclarer,
+  mainQueue: string,
 ): Promise<void> {
   await channel.assertQueue(DEAD_LETTER_QUEUE, { durable: true });
+
+  for (const delayMs of RETRY_DELAYS_MS) {
+    await channel.assertQueue(retryQueueName(mainQueue, delayMs), {
+      durable: true,
+      messageTtl: delayMs,
+      deadLetterExchange: '',
+      deadLetterRoutingKey: mainQueue,
+    });
+  }
 }
 
-export async function ensureDeadLetterQueue(url: string): Promise<void> {
+export async function ensureTopology(
+  url: string,
+  mainQueue: string,
+): Promise<void> {
   const connection = await amqp.connect(url);
   try {
     const channel = await connection.createChannel();
-    await assertDeadLetterQueue(channel);
+    await assertTopology(channel, mainQueue);
     await channel.close();
   } finally {
     await connection.close();

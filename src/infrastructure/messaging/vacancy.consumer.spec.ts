@@ -2,10 +2,13 @@ import { Logger } from '@nestjs/common';
 import { RmqContext } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { NotifySubscriberUseCase } from '../../application/use-cases/notify-subscriber.use-case';
+import { AppConfig } from '../../shared/config/app.config';
+import { APP_CONFIG } from '../../shared/tokens';
 import { VacancyConsumer } from './vacancy.consumer';
 
+const QUEUE = 'concursos.new';
+
 describe('VacancyConsumer', () => {
-  const message = { content: Buffer.from('{}') };
   const validPayload = {
     id: 'v1',
     job: 'Analista',
@@ -13,12 +16,22 @@ describe('VacancyConsumer', () => {
     region: 'SP',
     salary: 5000,
   };
+  const content = Buffer.from(JSON.stringify({ data: validPayload }));
+  const config = { rabbitmq: { queue: QUEUE } } as AppConfig;
 
   let execute: jest.Mock;
   let ack: jest.Mock;
   let nack: jest.Mock;
+  let publish: jest.Mock;
   let consumer: VacancyConsumer;
-  let context: RmqContext;
+
+  const contextFor = (headers?: Record<string, unknown>): RmqContext => {
+    const message = { content, properties: { headers } };
+    return {
+      getChannelRef: () => ({ ack, nack, publish }),
+      getMessage: () => message,
+    } as unknown as RmqContext;
+  };
 
   beforeEach(() => {
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -27,34 +40,36 @@ describe('VacancyConsumer', () => {
     execute = jest.fn().mockResolvedValue(undefined);
     ack = jest.fn();
     nack = jest.fn();
-    context = {
-      getChannelRef: () => ({ ack, nack }),
-      getMessage: () => message,
-    } as unknown as RmqContext;
-    // No backoff delay in tests.
+    publish = jest.fn().mockReturnValue(true);
     consumer = new VacancyConsumer(
       { execute } as unknown as NotifySubscriberUseCase,
-      0,
+      config,
     );
   });
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('can be built by Nest dependency injection with only its use case', async () => {
+  it('can be built by Nest dependency injection', async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [VacancyConsumer],
-      providers: [{ provide: NotifySubscriberUseCase, useValue: {} }],
+      providers: [
+        { provide: NotifySubscriberUseCase, useValue: {} },
+        { provide: APP_CONFIG, useValue: config },
+      ],
     }).compile();
 
     expect(moduleRef.get(VacancyConsumer)).toBeInstanceOf(VacancyConsumer);
   });
 
   it('acknowledges a vacancy that was processed', async () => {
+    const context = contextFor();
+
     await consumer.handleNewVacancy(validPayload, context);
 
     expect(execute).toHaveBeenCalledTimes(1);
-    expect(ack).toHaveBeenCalledWith(message);
+    expect(ack).toHaveBeenCalledWith(context.getMessage());
     expect(nack).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -65,33 +80,91 @@ describe('VacancyConsumer', () => {
   ])(
     'dead-letters a malformed payload (%s) immediately, without retrying',
     async (_label, payload) => {
+      const context = contextFor();
+
       await consumer.handleNewVacancy(payload, context);
 
       expect(execute).not.toHaveBeenCalled();
-      expect(nack).toHaveBeenCalledWith(message, false, false);
+      expect(publish).not.toHaveBeenCalled();
+      expect(nack).toHaveBeenCalledWith(context.getMessage(), false, false);
       expect(ack).not.toHaveBeenCalled();
     },
   );
 
-  it('retries a transient failure and acknowledges once it succeeds', async () => {
-    execute
-      .mockRejectedValueOnce(new Error('db down'))
-      .mockResolvedValueOnce(undefined);
+  describe('when processing fails', () => {
+    beforeEach(() => execute.mockRejectedValue(new Error('db down')));
 
-    await consumer.handleNewVacancy(validPayload, context);
+    it('schedules the first retry on the 2s retry queue and releases the message', async () => {
+      const context = contextFor();
 
-    expect(execute).toHaveBeenCalledTimes(2);
-    expect(ack).toHaveBeenCalledWith(message);
-    expect(nack).not.toHaveBeenCalled();
+      await consumer.handleNewVacancy(validPayload, context);
+
+      expect(publish).toHaveBeenCalledWith(
+        '',
+        'concursos.new.retry.2s',
+        content,
+        expect.objectContaining({
+          persistent: true,
+          headers: expect.objectContaining({ 'x-attempt': 2 }),
+        }),
+      );
+      // Acknowledged only after the retry copy was published: nothing is lost.
+      expect(ack).toHaveBeenCalledWith(context.getMessage());
+      expect(publish.mock.invocationCallOrder[0]).toBeLessThan(
+        ack.mock.invocationCallOrder[0] ?? Infinity,
+      );
+      expect(nack).not.toHaveBeenCalled();
+    });
+
+    it('uses the 4s retry queue for the second retry', async () => {
+      await consumer.handleNewVacancy(
+        validPayload,
+        contextFor({ 'x-attempt': 2 }),
+      );
+
+      expect(publish).toHaveBeenCalledWith(
+        '',
+        'concursos.new.retry.4s',
+        content,
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-attempt': 3 }),
+        }),
+      );
+    });
+
+    it('dead-letters the message on the third failed attempt', async () => {
+      const context = contextFor({ 'x-attempt': 3 });
+
+      await consumer.handleNewVacancy(validPayload, context);
+
+      expect(publish).not.toHaveBeenCalled();
+      expect(nack).toHaveBeenCalledWith(context.getMessage(), false, false);
+      expect(ack).not.toHaveBeenCalled();
+    });
+
+    it('keeps other headers when scheduling a retry', async () => {
+      await consumer.handleNewVacancy(
+        validPayload,
+        contextFor({ 'x-trace': 'abc' }),
+      );
+
+      expect(publish).toHaveBeenCalledWith(
+        '',
+        expect.any(String),
+        content,
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-trace': 'abc' }),
+        }),
+      );
+    });
   });
 
-  it('dead-letters the message after three failed attempts', async () => {
-    execute.mockRejectedValue(new Error('still down'));
+  it('does not block while waiting to retry (no in-process sleep)', async () => {
+    execute.mockRejectedValue(new Error('db down'));
+    const started = Date.now();
 
-    await consumer.handleNewVacancy(validPayload, context);
+    await consumer.handleNewVacancy(validPayload, contextFor());
 
-    expect(execute).toHaveBeenCalledTimes(3);
-    expect(nack).toHaveBeenCalledWith(message, false, false);
-    expect(ack).not.toHaveBeenCalled();
+    expect(Date.now() - started).toBeLessThan(500);
   });
 });

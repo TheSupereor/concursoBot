@@ -1,6 +1,6 @@
 # 0005. RabbitMQ with retries and a dead-letter queue
 
-Status: Accepted. Retry queues with TTL are planned to replace the in-process delay.
+Status: Accepted
 
 ## Context
 
@@ -15,9 +15,12 @@ acknowledgement and `prefetch` 10.
 - The queue is declared with a dead-letter exchange routing to `concursos.dlq`. The queue
   arguments are defined once (`vacancyQueueOptions`) and used by publisher and consumer, because
   RabbitMQ rejects a re-declaration with different arguments.
-- The consumer validates the payload. A malformed message is dead-lettered immediately; a
-  processing failure is retried up to 3 times with exponential backoff (2 s, 4 s), then
-  dead-lettered.
+- The consumer validates the payload. A malformed message is dead-lettered immediately.
+- A processing failure is retried through **TTL retry queues**, never by sleeping in the handler.
+  For each backoff delay there is a queue (`concursos.new.retry.2s`, `.4s`) with a message TTL
+  that dead-letters back to the main queue. On failure the consumer publishes the message to the
+  queue for its attempt (an `x-attempt` header carries the counter), then acknowledges the
+  original. After the third failed attempt the message is dead-lettered to the DLQ.
 - Delivery failures reach the consumer: the notification adapter returns a `DeliveryResult` and
   the use case throws a retryable error for transient failures.
 - The DLQ is **declared but never consumed**, so messages stay ready for inspection and manual
@@ -26,6 +29,7 @@ acknowledgement and `prefetch` 10.
 ## Consequences
 
 - At-least-once delivery; duplicates are neutralised by [0006](0006-claim-first-idempotency.md).
-- The backoff currently sleeps inside the handler, which occupies a prefetch slot. The target
-  design is retry queues with TTL that dead-letter back to the main queue.
+- A retry never occupies a prefetch slot, so a failing downstream cannot stall the consumer.
+- The retry copy is published before the original is acknowledged: a crash in between duplicates
+  the message at worst, which idempotency absorbs, and never loses it.
 - Replaying the DLQ is a manual operation today.

@@ -83,7 +83,7 @@ sequenceDiagram
       UC-->>UC: skip
     end
   end
-  Co->>MQ: ack, or retry up to 3 times and then dead-letter
+  Co->>MQ: ack, or retry through TTL queues (2s, 4s) and then dead-letter
 ```
 
 - **Idempotency** is claim-first: the `(telegramId, vacancyId)` pair is reserved with an atomic
@@ -144,5 +144,5 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 ## Known limitations
 
 See the README. In short: no migrations yet (`synchronize: true`), the scraper reads one region,
-and the retry delay is applied in-process rather than through retry queues. These are tracked in
-the project phases.
+and subscribers are still matched in memory rather than in SQL. These are tracked in the project
+phases.
