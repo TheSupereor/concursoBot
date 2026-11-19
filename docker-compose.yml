@@ -68,9 +68,17 @@ services:
       - path: .env
         required: false # lets `docker compose up mysql rabbitmq` work before .env exists
     environment:
+      # This stack is for local development, so the app runs in development mode. The image
+      # itself defaults to production, which refuses the guest RabbitMQ credentials used below
+      # and requires explicit Stripe redirect URLs.
+      NODE_ENV: development
       # Inside the compose network, services are reached by name, not localhost.
       DB_HOST: mysql
       DB_PORT: 3306
+      # Must match the credentials of the mysql service above.
+      DB_USERNAME: user_concursos
+      DB_PASSWORD: user_password
+      DB_DATABASE: concursos_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
     ports:
