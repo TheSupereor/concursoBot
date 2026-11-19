@@ -144,5 +144,5 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 
 ## Known limitations
 
-See the README. In short: the scraper reads one region, and saving a subscriber rewrites its
-preferences. These are tracked in the project phases.
+See the README. In short: the scraper reads one region and vacancies are not persisted yet. Both belong
+to the next phase.
