@@ -7,20 +7,11 @@ import {
   PROCESSED_EVENT_REPOSITORY,
   SUBSCRIBER_REPOSITORY,
 } from '../shared/tokens';
-import { NotificationLogOrmEntity } from '../infrastructure/persistence/entities/notification-log.orm-entity';
-import { PreferenceOrmEntity } from '../infrastructure/persistence/entities/preference.orm-entity';
-import { StripeEventOrmEntity } from '../infrastructure/persistence/entities/stripe-event.orm-entity';
-import { SubscriberOrmEntity } from '../infrastructure/persistence/entities/subscriber.orm-entity';
+import { entities } from '../infrastructure/persistence/entities';
+import { migrations } from '../infrastructure/persistence/migrations';
 import { MysqlNotificationLogRepository } from '../infrastructure/persistence/repositories/mysql-notification-log.repository';
 import { MysqlProcessedEventRepository } from '../infrastructure/persistence/repositories/mysql-processed-event.repository';
 import { MysqlSubscriberRepository } from '../infrastructure/persistence/repositories/mysql-subscriber.repository';
-
-const entities = [
-  SubscriberOrmEntity,
-  PreferenceOrmEntity,
-  NotificationLogOrmEntity,
-  StripeEventOrmEntity,
-];
 
 /** Database connection and the repository adapters bound to their domain ports. */
 @Module({
@@ -31,8 +22,10 @@ const entities = [
         type: 'mysql' as const,
         ...config.database,
         entities,
-        // TODO(phase 3): replace with migrations. Never enable in production.
-        synchronize: true,
+        // The schema is owned by migrations; synchronize can silently drop columns.
+        synchronize: false,
+        migrations,
+        migrationsRun: true,
       }),
     }),
     TypeOrmModule.forFeature(entities),

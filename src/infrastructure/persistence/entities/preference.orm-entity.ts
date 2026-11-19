@@ -13,13 +13,19 @@ export class PreferenceOrmEntity {
   region!: string;
 
   // Usamos 'decimal' para dinheiro para evitar erros de arredondamento que o 'float' tem
-  // The column keeps its historical (misspelled) name so existing databases are untouched;
-  // the property was renamed. A migration can rename the column later.
-  @Column({ name: 'minimunSalary', type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   // MySQL returns DECIMAL columns as strings.
   minimumSalary!: number | string;
 
   // Relacionamento: Muitas preferências pertencem a UM assinante
-  @ManyToOne(() => SubscriberOrmEntity, (subscriber) => subscriber.preferences)
+  // A preference cannot exist without its subscriber; deleting a subscriber deletes them.
+  @ManyToOne(
+    () => SubscriberOrmEntity,
+    (subscriber) => subscriber.preferences,
+    {
+      nullable: false,
+      onDelete: 'CASCADE',
+    },
+  )
   subscriber!: SubscriberOrmEntity;
 }

@@ -143,6 +143,5 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 
 ## Known limitations
 
-See the README. In short: no migrations yet (`synchronize: true`), the scraper reads one region,
-and subscribers are still matched in memory rather than in SQL. These are tracked in the project
-phases.
+See the README. In short: the scraper reads one region and subscribers are still matched in memory
+rather than in SQL. These are tracked in the project phases.

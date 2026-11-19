@@ -38,18 +38,21 @@ const DEV_RABBITMQ_URL = 'amqp://guest:guest@localhost:5672';
 const required = (name: string) =>
   z.string({ error: `${name} is required` }).min(1, `${name} is required`);
 
-const envSchema = z
-  .object({
+/** Database variables, also used on their own by the migration CLI. */
+const databaseEnvSchema = z.object({
+  DB_HOST: z.string().min(1).default('localhost'),
+  DB_PORT: z.coerce.number().int().min(1).max(65535).default(3306),
+  DB_USERNAME: required('DB_USERNAME'),
+  DB_PASSWORD: required('DB_PASSWORD'),
+  DB_DATABASE: required('DB_DATABASE'),
+});
+
+const envSchema = databaseEnvSchema
+  .extend({
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-
-    DB_HOST: z.string().min(1).default('localhost'),
-    DB_PORT: z.coerce.number().int().min(1).max(65535).default(3306),
-    DB_USERNAME: required('DB_USERNAME'),
-    DB_PASSWORD: required('DB_PASSWORD'),
-    DB_DATABASE: required('DB_DATABASE'),
 
     RABBITMQ_URL: z.string().min(1).optional(),
     RABBITMQ_QUEUE: z.string().min(1).default('concursos.new'),
@@ -99,6 +102,35 @@ const envSchema = z
     }
   });
 
+function formatProblems(error: z.ZodError): string {
+  return error.issues
+    .map((issue) => `  - ${issue.path.join('.') || 'env'}: ${issue.message}`)
+    .join('\n');
+}
+
+export type DatabaseConfig = AppConfig['database'];
+
+/**
+ * Validates only the database variables. Used by the TypeORM CLI (migrations), which runs
+ * without the Telegram and Stripe settings.
+ */
+export function loadDatabaseConfig(env: NodeJS.ProcessEnv): DatabaseConfig {
+  const parsed = databaseEnvSchema.safeParse(env);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid database configuration:\n${formatProblems(parsed.error)}`,
+    );
+  }
+  const e = parsed.data;
+  return {
+    host: e.DB_HOST,
+    port: e.DB_PORT,
+    username: e.DB_USERNAME,
+    password: e.DB_PASSWORD,
+    database: e.DB_DATABASE,
+  };
+}
+
 /**
  * Validates the environment once, at startup, and returns a typed config. It fails fast with
  * every problem listed, naming variables but never printing their values (they may be secrets).
@@ -107,10 +139,9 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
   const parsed = envSchema.safeParse(env);
 
   if (!parsed.success) {
-    const problems = parsed.error.issues
-      .map((issue) => `  - ${issue.path.join('.') || 'env'}: ${issue.message}`)
-      .join('\n');
-    throw new Error(`Invalid environment configuration:\n${problems}`);
+    throw new Error(
+      `Invalid environment configuration:\n${formatProblems(parsed.error)}`,
+    );
   }
 
   const e = parsed.data;
