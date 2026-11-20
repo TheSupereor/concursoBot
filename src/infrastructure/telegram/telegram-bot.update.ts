@@ -7,8 +7,8 @@ import { ISubscriberRepository } from '../../domain/ports/subscriber-repository.
 import { DefineSalaryUseCase } from '../../application/use-cases/define-salary.use-case';
 import { GetSubscriberStatusUseCase } from '../../application/use-cases/get-subscriber-status.use-case';
 import { Inject, Logger } from '@nestjs/common';
-import { AREAS } from '../../domain/value-objects/area';
-import { REGIONS } from '../../domain/value-objects/region';
+import { MAX_PREFERENCES } from '../../domain/entities/subscriber';
+import { SALARY_OPTIONS, callbackData, callbackPattern } from './callback-data';
 import { userMessageFor } from './user-messages';
 import { StripeClient } from '../billing/stripe-types';
 import { AppConfig } from '../../shared/config/app.config';
@@ -49,7 +49,7 @@ export class TelegramBotUpdate {
       await ctx.reply(
         `Olá, ${nome}! Bem-vindo ao Radar de Concursos. 🎯\n\n` +
           `Eu sou um bot focado em não deixar você perder o edital da sua vida.\n\n` +
-          `Para começar, use o comando /filtros para me dizer quais vagas você está buscando.`,
+          `Para começar, use o comando /areas para me dizer quais vagas você está buscando.`,
       );
     } catch (error) {
       this.logger.error('Failed to handle /start', error);
@@ -104,7 +104,7 @@ export class TelegramBotUpdate {
       const message =
         `📊 *Seu Radar de Concursos*\n\n` +
         `Assinatura: ${assinaturaLabel}\n` +
-        `Áreas monitoradas: *${totalPrefs}/5*\n\n` +
+        `Áreas monitoradas: *${totalPrefs}/${MAX_PREFERENCES}*\n\n` +
         `${prefsText}\n\n` +
         `Use /areas para adicionar · /minhas\\_areas para remover · /salario para filtrar`;
 
@@ -119,18 +119,25 @@ export class TelegramBotUpdate {
 
   @Command('areas')
   async onFilters(@Ctx() ctx: Context) {
-    // Markup.inlineKeyboard desenha os botões.
-    // O primeiro parâmetro do botão é o Texto (visível), o segundo é o Callback Data (oculto)
+    // The first argument of a button is the visible text, the second the data sent back.
     const teclado = Markup.inlineKeyboard([
       [
-        Markup.button.callback('💻 T.I.', 'add_area_TI'),
-        Markup.button.callback('⚖️ Tribunais', 'add_area_TRIBUNAIS'),
+        Markup.button.callback('💻 T.I.', callbackData.addArea('TI')),
+        Markup.button.callback(
+          '⚖️ Tribunais',
+          callbackData.addArea('TRIBUNAIS'),
+        ),
       ],
       [
-        Markup.button.callback('🏥 Saúde', 'add_area_SAUDE'),
-        Markup.button.callback('📚 Educação', 'add_area_EDUCACAO'),
+        Markup.button.callback('🏥 Saúde', callbackData.addArea('SAUDE')),
+        Markup.button.callback('📚 Educação', callbackData.addArea('EDUCACAO')),
       ],
-      [Markup.button.callback('🚔 Carreiras Policiais', 'add_area_POLICIAL')],
+      [
+        Markup.button.callback(
+          '🚔 Carreiras Policiais',
+          callbackData.addArea('POLICIAL'),
+        ),
+      ],
     ]);
 
     await ctx.reply(
@@ -139,33 +146,24 @@ export class TelegramBotUpdate {
     );
   }
 
-  @Action(new RegExp(`^add_area_(${AREAS.join('|')})$`))
+  @Action(callbackPattern.addArea)
   async onSelectedArea(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const [, selectedArea] = ctx.match;
+    if (!selectedArea) return;
 
     await ctx.answerCbQuery();
 
+    const region = (code: string, label = code) =>
+      Markup.button.callback(
+        label,
+        callbackData.pickRegion(selectedArea, code),
+      );
     const regionKeyboard = Markup.inlineKeyboard([
-      [
-        Markup.button.callback('🇧🇷 Nacional', `pick_region:${selectedArea}:BR`),
-        Markup.button.callback('SP', `pick_region:${selectedArea}:SP`),
-      ],
-      [
-        Markup.button.callback('RJ', `pick_region:${selectedArea}:RJ`),
-        Markup.button.callback('MG', `pick_region:${selectedArea}:MG`),
-      ],
-      [
-        Markup.button.callback('RS', `pick_region:${selectedArea}:RS`),
-        Markup.button.callback('PR', `pick_region:${selectedArea}:PR`),
-      ],
-      [
-        Markup.button.callback('BA', `pick_region:${selectedArea}:BA`),
-        Markup.button.callback('DF', `pick_region:${selectedArea}:DF`),
-      ],
-      [
-        Markup.button.callback('CE', `pick_region:${selectedArea}:CE`),
-        Markup.button.callback('GO', `pick_region:${selectedArea}:GO`),
-      ],
+      [region('BR', '🇧🇷 Nacional'), region('SP')],
+      [region('RJ'), region('MG')],
+      [region('RS'), region('PR')],
+      [region('BA'), region('DF')],
+      [region('CE'), region('GO')],
     ]);
 
     await ctx.reply(
@@ -177,9 +175,7 @@ export class TelegramBotUpdate {
     );
   }
 
-  @Action(
-    new RegExp(`^pick_region:(${AREAS.join('|')}):(${REGIONS.join('|')})$`),
-  )
+  @Action(callbackPattern.pickRegion)
   async onRegionSelected(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const telegramId = senderId(ctx);
     if (!telegramId) return;
@@ -222,7 +218,7 @@ export class TelegramBotUpdate {
       return [
         Markup.button.callback(
           `Remover ${pref.area} — ${pref.region}`,
-          `del_pref:${pref.area}:${pref.region}`,
+          callbackData.removePreference(pref.area, pref.region),
         ),
       ];
     });
@@ -236,7 +232,7 @@ export class TelegramBotUpdate {
   }
 
   // 2. A Action que escuta o clique no botão de excluir
-  @Action(new RegExp(`^del_pref:(${AREAS.join('|')}):(${REGIONS.join('|')})$`))
+  @Action(callbackPattern.removePreference)
   async onAreaRemovida(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const telegramId = senderId(ctx);
     if (!telegramId) return;
@@ -296,22 +292,18 @@ export class TelegramBotUpdate {
 
   @Command('salario')
   async onSalary(@Ctx() ctx: Context) {
-    const teclado = Markup.inlineKeyboard([
-      [
-        Markup.button.callback('Qualquer Valor', 'set_salario_0'),
-        Markup.button.callback('R$ 3.000+', 'set_salario_3000'),
-      ],
-      [
-        Markup.button.callback('R$ 5.000+', 'set_salario_5000'),
-        Markup.button.callback('R$ 10.000+', 'set_salario_10000'),
-      ],
-      [
-        Markup.button.callback(
-          'R$ 15.000+ (Alto Escalão)',
-          'set_salario_15000',
-        ),
-      ],
-    ]);
+    const labels: Record<(typeof SALARY_OPTIONS)[number], string> = {
+      0: 'Qualquer Valor',
+      3000: 'R$ 3.000+',
+      5000: 'R$ 5.000+',
+      10000: 'R$ 10.000+',
+      15000: 'R$ 15.000+ (Alto Escalão)',
+    };
+    const teclado = Markup.inlineKeyboard(
+      SALARY_OPTIONS.map((value) => [
+        Markup.button.callback(labels[value], callbackData.setSalary(value)),
+      ]),
+    );
 
     await ctx.reply(
       '💸 *Filtro de Salário*\n\nSelecione o piso salarial desejado. Só enviaremos vagas que paguem acima deste valor:',
@@ -320,7 +312,7 @@ export class TelegramBotUpdate {
   }
 
   // 2. A Action que captura o clique
-  @Action(/set_salario_(\d+)/)
+  @Action(callbackPattern.setSalary)
   async onSalaryDefine(@Ctx() ctx: Context & { match: RegExpExecArray }) {
     const telegramId = senderId(ctx);
     if (!telegramId) return;
@@ -333,11 +325,11 @@ export class TelegramBotUpdate {
       const textoSalario =
         valorEscolhido === 0
           ? 'Qualquer valor'
-          : `Acima de R$ ${valorEscolhido},00`;
+          : `Acima de R$ ${valorEscolhido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
       await ctx.answerCbQuery('Salário atualizado!');
       await ctx.editMessageText(
-        `✅ Feito! Seu radar agora só buscará vagas com salário: **${textoSalario}**`,
+        `✅ Feito! Seu radar agora só buscará vagas com salário: *${textoSalario}*`,
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
