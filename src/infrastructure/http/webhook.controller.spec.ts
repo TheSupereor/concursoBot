@@ -83,6 +83,8 @@ describe('WebhookController (Stripe)', () => {
       ],
     }).compile();
 
+    // NestApplicationContextOptions is declared as a class but is used as an options bag.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment
     app = moduleRef.createNestApplication({ rawBody: true });
     await app.init();
   });

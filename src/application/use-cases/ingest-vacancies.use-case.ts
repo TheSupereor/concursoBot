@@ -86,16 +86,24 @@ export class IngestVacanciesUseCase {
     today: number,
     summary: IngestionSummary,
   ): Promise<void> {
-    if (item.status === 'cancelled') return void summary.skipped.cancelled++;
+    if (item.status === 'cancelled') {
+      summary.skipped.cancelled++;
+      return;
+    }
     // The deadline is a calendar day: registration is open through that whole day.
     if (item.deadline && startOfDayUtc(item.deadline) < today) {
-      return void summary.skipped.expired++;
+      summary.skipped.expired++;
+      return;
     }
-    if (!isRegion(item.region)) return void summary.skipped.invalid++;
+    if (!isRegion(item.region)) {
+      summary.skipped.invalid++;
+      return;
+    }
 
     const vacancy = toVacancy(sourceId, item);
     if (await this.vacancies.exists(vacancy.id)) {
-      return void summary.skipped.known++;
+      summary.skipped.known++;
+      return;
     }
 
     try {
