@@ -144,12 +144,13 @@ See [ADR 0009](adr/0009-architecture-rules-in-ci.md). The rules live in
 
 ## Testing strategy
 
-| Level               | What                                                                                                                                                   | Where                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| Unit                | Domain rules, use cases with in-memory ports, mappers, formatters, config validation                                                                   | `*.spec.ts`                                         |
-| Integration-style   | Webhook with signed payloads, Nest dependency injection of controllers                                                                                 | `*.spec.ts`                                         |
-| Integration (MySQL) | Repositories against a real database built by the migrations: SQL matching versus the domain rule, concurrent idempotency claims, the Stripe event log | `*.integration.spec.ts`, `npm run test:integration` |
-| End to end          | The real app against real MySQL and RabbitMQ with a fake Telegram Bot API, including retries through the TTL queues                                    | `npm run smoke`                                     |
+| Level               | What                                                                                                                                                   | Where                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| Unit                | Domain rules, use cases with in-memory ports, mappers, formatters, config validation                                                                   | `*.spec.ts`                                              |
+| Integration-style   | Webhook with signed payloads, Nest dependency injection of controllers                                                                                 | `*.spec.ts`                                              |
+| Integration (MySQL) | Repositories against a real database built by the migrations: SQL matching versus the domain rule, concurrent idempotency claims, the Stripe event log | `*.integration.spec.ts`, `npm run test:integration`      |
+| Coverage            | Thresholds per layer in the Jest configuration; the summary by layer is printed in every CI run (`npm run coverage:summary`)                           | `package.json`, [ADR 0014](adr/0014-ci-quality-gates.md) |
+| End to end          | The real app against real MySQL and RabbitMQ with a fake Telegram Bot API, including retries through the TTL queues                                    | `npm run smoke`                                          |
 
 ## Known limitations
 
