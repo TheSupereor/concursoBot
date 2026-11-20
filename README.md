@@ -1,6 +1,6 @@
 # Radar de Concursos
 
-[![CI](https://github.com/TheSupereor/alertas-concursos-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/TheSupereor/alertas-concursos-bot/actions/workflows/ci.yml)
+[![CI](https://github.com/TheSupereor/concursoBot/actions/workflows/ci.yml/badge.svg)](https://github.com/TheSupereor/concursoBot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-work_in_progress-orange)
 

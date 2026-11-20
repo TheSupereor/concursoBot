@@ -115,7 +115,7 @@ describe('scraper configuration', () => {
       intervalMinutes: 60,
       runOnStart: false,
       userAgent:
-        'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/alertas-concursos-bot)',
+        'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/concursoBot)',
       pci: { baseUrl: 'https://www.pciconcursos.com.br', pageDelayMs: 2000 },
     });
   });
