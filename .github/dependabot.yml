@@ -7,11 +7,15 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(deps)'
+    # Minor and patch updates are grouped. A major update arrives as its own pull request, so a
+    # breaking one cannot block the safe updates next to it.
     groups:
       nest:
         patterns: ['@nestjs/*']
+        update-types: ['minor', 'patch']
       dev-tooling:
         dependency-type: development
+        update-types: ['minor', 'patch']
   - package-ecosystem: github-actions
     directory: /
     schedule:
