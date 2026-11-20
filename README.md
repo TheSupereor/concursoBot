@@ -48,17 +48,18 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 ### Launch milestones
 
-| Milestone                 | Status | Meaning                                            |
-| ------------------------- | ------ | -------------------------------------------------- |
-| M1: local stack in Docker | 🚧     | `docker compose up` runs the whole system          |
-| M2: closed beta           | 📋     | Friends and testers, Stripe in test mode           |
-| M3: paying customers      | 📋     | Hosted 24/7, Stripe live, privacy requirements met |
+| Milestone                 | Status | Meaning                                                                                                                               |
+| ------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| M1: local stack in Docker | ✅     | `docker compose up --build` runs MySQL, RabbitMQ and the app; checked in containers with the real Telegram token and Stripe test keys |
+| M2: closed beta           | 📋     | Friends and testers, Stripe in test mode                                                                                              |
+| M3: paying customers      | 📋     | Hosted 24/7, Stripe live, privacy requirements met                                                                                    |
 
 ### What changed recently
 
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
 - Phase 1 complete: new users start inactive, atomic notification idempotency, delivery failures propagate to retries and the DLQ, a single RabbitMQ topology, idempotent Stripe webhooks with the Telegram id on the subscription, and escaped HTML alerts.
 - Phase 2 so far: kebab-case file names; domain and application layers free of TypeORM and NestJS; typed domain errors and an immutable, validated `Preference`; environment validated once at startup (zod) and injected as typed config; one Stripe client and one Telegraf client; the app split into feature modules (`src/modules`).
+- **Milestone M1 reached**: the whole system runs with `docker compose up --build`. Checked in containers with the real Telegram token and Stripe test keys: the app boots and the token is valid, migrations run on their own, the retry queues and dead-letter queue exist without consumers, the webhook refuses unsigned calls, the image reaches external sites and a restart keeps the data. The Telegram and Stripe round trips (a real `/start`, a test payment, an alert) were verified earlier with the same code running outside the container. Two things had to be fixed on the way: the compose app service lacked the database credentials, and it must run in development mode because the image defaults to production, which refuses the guest RabbitMQ credentials.
 - Phase 4 complete. The scraper behaves like a good guest by construction: honest User-Agent, `robots.txt` obeyed (RFC 9309 semantics), paced requests, one lock shared by all instances, listing metadata only with a link back to the source, and **no source enabled by default in production**. A weekly workflow (`npm run scraper:check`) reads the live site and fails if the parser stops understanding it; today it parses 602 vacancies. See ADR 0013, including the open question about reusing the site's data in a paid product.
 - Phase 4: vacancies are now ingested by a use case behind an `IVacancySource` port: each gets a stable id (SHA-256 of source and address), is deduplicated in a `vacancies` table (so a restart no longer re-announces everything), is published to the queue, and alerts carry the organization, areas, salary ceiling, deadline and a link to the listing. Cancelled and expired competitions are skipped. The old scraper is gone.
 - Phase 4 so far: the PCI Concursos listing parser was rewritten for the site's current markup (the old selectors matched nothing, which is why no vacancies were found), tested against a fixture and checked against the live page (all 346 listings of the Southeast page are understood). The area classifier matches whole words instead of substrings, and a vacancy now belongs to every area with evidence.
@@ -81,7 +82,6 @@ Vacancies come from public listings on third-party sites. The scraper identifies
 
 These are known issues in the current code and are scheduled in the phases above:
 
-- **Not yet run with real Telegram and Stripe credentials, nor inside the app container** (M1 blocker). The whole flow is verified end to end against real MySQL and RabbitMQ with a fake Telegram API (`npm run smoke`).
 - Bot command replies still use legacy Markdown and Portuguese strings are inline (i18n comes later).
 - Listings titled "Vários Cargos" (about 40% of a regional page) carry no role information, so they only reach subscribers who follow any area.
 - The PCI Concursos data is fine for development and a closed beta, but reusing it in a paid product needs the site's permission (ADR 0013).
@@ -89,16 +89,33 @@ These are known issues in the current code and are scheduled in the phases above
 
 ## Getting started
 
-Requirements: Node.js 22 (`.nvmrc`), Docker.
+Requirements: Docker, and Node.js 22 (`.nvmrc`) only if you run the app outside Docker.
+
+### Everything in Docker
 
 ```bash
-cp .env.example .env            # fill in Telegram and Stripe test values
+cp .env.example .env     # fill in TELEGRAM_BOT_TOKEN and the Stripe test values
+docker compose up --build
+```
+
+This starts MySQL, RabbitMQ, Adminer and the app; the database schema is created by the migrations at startup. The `DB_*` variables are set by the compose file, so `.env` only needs the Telegram and Stripe values.
+
+To receive Stripe webhooks locally, forward them with the Stripe CLI and use the signing secret it prints as `STRIPE_WEBHOOK_SECRET`:
+
+```bash
+stripe listen --events checkout.session.completed,customer.subscription.deleted --forward-to localhost:3000/webhooks/stripe
+```
+
+### App on your machine, dependencies in Docker
+
+```bash
+cp .env.example .env     # also fill in the DB_* values
 docker compose up -d mysql rabbitmq
 npm ci
 npm run start:dev
 ```
 
-`docker compose up --build` also builds and runs the app container (see the first limitation above).
+This local stack runs the app in development mode. The image itself defaults to production, which refuses the default RabbitMQ credentials and requires explicit Stripe redirect URLs.
 
 Useful commands:
 
