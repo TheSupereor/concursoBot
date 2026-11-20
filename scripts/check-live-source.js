@@ -18,7 +18,7 @@ const config = {
     enabledSources: ['pci-concursos'],
     userAgent:
       process.env.SCRAPER_USER_AGENT ||
-      'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/alertas-concursos-bot)',
+      'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/concursoBot)',
     pci: { baseUrl: 'https://www.pciconcursos.com.br', pageDelayMs: 2000 },
   },
 };

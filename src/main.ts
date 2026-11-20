@@ -12,6 +12,8 @@ import { APP_CONFIG } from './shared/tokens';
 async function bootstrap() {
   const logger = new Logger('Main');
 
+  // NestApplicationContextOptions is declared as a class but is used as an options bag.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // required to verify Stripe webhook signatures
   });

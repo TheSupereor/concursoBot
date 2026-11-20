@@ -30,10 +30,11 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infrastructure/persistence/data-source.ts",
     "migration:check": "typeorm-ts-node-commonjs schema:log -d src/infrastructure/persistence/data-source.ts",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
-    "scraper:check": "node scripts/check-live-source.js"
+    "scraper:check": "node scripts/check-live-source.js",
+    "coverage:summary": "node scripts/coverage-summary.js"
   },
   "dependencies": {
-    "@nestjs/common": "^10.0.0",
+    "@nestjs/common": "^10.4.22",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^10.0.0",
     "@nestjs/microservices": "^10.4.22",
@@ -97,13 +98,62 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!**/*.module.ts",
+      "!main.ts",
+      "!**/migrations/**",
+      "!**/data-source.ts",
+      "!**/shared/testing/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "/node_modules/",
       "\\.integration\\.spec\\.ts$"
+    ],
+    "coverageThreshold": {
+      "./src/domain/": {
+        "statements": 95,
+        "branches": 90,
+        "functions": 95,
+        "lines": 95
+      },
+      "./src/application/": {
+        "statements": 90,
+        "branches": 80,
+        "functions": 80,
+        "lines": 90
+      },
+      "./src/infrastructure/messaging/": {
+        "statements": 88,
+        "branches": 88,
+        "functions": 88,
+        "lines": 88
+      },
+      "./src/infrastructure/scraper/": {
+        "statements": 90,
+        "branches": 80,
+        "functions": 80,
+        "lines": 90
+      },
+      "./src/infrastructure/telegram/": {
+        "statements": 95,
+        "branches": 78,
+        "functions": 95,
+        "lines": 95
+      },
+      "./src/infrastructure/monitoring/": {
+        "statements": 90,
+        "branches": 90,
+        "functions": 90,
+        "lines": 90
+      }
+    },
+    "coverageReporters": [
+      "text-summary",
+      "lcov",
+      "json-summary"
     ]
   },
   "engines": {

@@ -56,7 +56,7 @@ export const KNOWN_VACANCY_SOURCES = ['pci-concursos'] as const;
 const MIN_PRODUCTION_INTERVAL_MINUTES = 15;
 
 const DEFAULT_USER_AGENT =
-  'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/alertas-concursos-bot)';
+  'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/concursoBot)';
 
 const parseSourceList = (value: string): string[] =>
   value

@@ -30,6 +30,11 @@ npm run test:ci
 npm run build
 ```
 
+Unit tests enforce a coverage threshold per layer (see the Jest configuration in `package.json`);
+`npm run coverage:summary` prints the numbers by layer after `npm run test:ci`. CI also runs the
+integration tests, the end-to-end smoke test, a dependency audit and CodeQL, and keeps a release
+pull request up to date (see [ADR 0014](docs/adr/0014-ci-quality-gates.md)).
+
 Integration tests run against a real MySQL (`docker compose up -d mysql`) and create a throwaway
 database per spec file, built by the real migrations:
 

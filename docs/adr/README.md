@@ -19,3 +19,4 @@ supersedes it.
 | [0011](0011-transactional-save-with-stable-ids.md) | Transactional save with stable preference ids                          | Accepted                                                           |
 | [0012](0012-vacancy-ingestion.md)                  | Vacancy ingestion: stable ids, publish before recording, several areas | Accepted                                                           |
 | [0013](0013-vacancy-source-policy.md)              | Vacancy source policy: polite by construction, opt-in in production    | Accepted, one question open                                        |
+| [0014](0014-ci-quality-gates.md)                   | CI quality gates                                                       | Accepted, audit level below target                                 |
