@@ -109,14 +109,19 @@ describe('scraper configuration', () => {
     STRIPE_CANCEL_URL: 'https://example.com/cancel',
   });
 
-  it('enables the PCI source and polite defaults in development', () => {
+  it('enables every source and polite defaults in development', () => {
     expect(loadConfig(base()).scraper).toEqual({
-      enabledSources: ['pci-concursos'],
+      enabledSources: ['pci-concursos', 'cebraspe'],
       intervalMinutes: 60,
       runOnStart: false,
       userAgent:
         'RadarConcursosBot/1.0 (+https://github.com/TheSupereor/concursoBot)',
       pci: { baseUrl: 'https://www.pciconcursos.com.br', pageDelayMs: 2000 },
+      cebraspe: {
+        apiUrl: 'https://apis.cebraspe.org.br/cebraspe',
+        siteUrl: 'https://www.cebraspe.org.br',
+        requestDelayMs: 1000,
+      },
     });
   });
 
@@ -168,6 +173,21 @@ describe('scraper configuration', () => {
       runOnStart: true,
       userAgent: 'MyBot/2.0',
       pci: { baseUrl: 'http://localhost:9998', pageDelayMs: 0 },
+    });
+  });
+
+  it('reads the Cebraspe settings', () => {
+    const config = loadConfig({
+      ...base(),
+      CEBRASPE_API_URL: 'http://localhost:9997/cebraspe',
+      CEBRASPE_SITE_URL: 'http://localhost:9997',
+      CEBRASPE_REQUEST_DELAY_MS: '0',
+    });
+
+    expect(config.scraper.cebraspe).toEqual({
+      apiUrl: 'http://localhost:9997/cebraspe',
+      siteUrl: 'http://localhost:9997',
+      requestDelayMs: 0,
     });
   });
 

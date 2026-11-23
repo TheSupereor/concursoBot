@@ -37,6 +37,14 @@ export interface AppConfig {
       /** Pause between two pages of the same site. */
       readonly pageDelayMs: number;
     };
+    readonly cebraspe: {
+      /** Base of the JSON API behind the organizer's website. */
+      readonly apiUrl: string;
+      /** Public website the alerts link to. */
+      readonly siteUrl: string;
+      /** Pause between two requests to the API. */
+      readonly requestDelayMs: number;
+    };
   };
   readonly stripe: {
     readonly secretKey: string;
@@ -50,7 +58,7 @@ export interface AppConfig {
 const DEV_RABBITMQ_URL = 'amqp://guest:guest@localhost:5672';
 
 /** Vacancy sources the application knows how to read. */
-export const KNOWN_VACANCY_SOURCES = ['pci-concursos'] as const;
+export const KNOWN_VACANCY_SOURCES = ['pci-concursos', 'cebraspe'] as const;
 
 /** Shortest interval between two scraping runs in production. */
 const MIN_PRODUCTION_INTERVAL_MINUTES = 15;
@@ -108,6 +116,12 @@ const envSchema = databaseEnvSchema
     SCRAPER_USER_AGENT: z.string().min(1).default(DEFAULT_USER_AGENT),
     PCI_BASE_URL: z.string().min(1).default('https://www.pciconcursos.com.br'),
     PCI_PAGE_DELAY_MS: z.coerce.number().int().min(0).default(2000),
+    CEBRASPE_API_URL: z
+      .string()
+      .min(1)
+      .default('https://apis.cebraspe.org.br/cebraspe'),
+    CEBRASPE_SITE_URL: z.string().min(1).default('https://www.cebraspe.org.br'),
+    CEBRASPE_REQUEST_DELAY_MS: z.coerce.number().int().min(0).default(1000),
   })
   .superRefine((env, ctx) => {
     const unknown = parseSourceList(env.SCRAPER_ENABLED_SOURCES ?? '').filter(
@@ -236,6 +250,11 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       runOnStart: e.SCRAPER_RUN_ON_START === 'true',
       userAgent: e.SCRAPER_USER_AGENT,
       pci: { baseUrl: e.PCI_BASE_URL, pageDelayMs: e.PCI_PAGE_DELAY_MS },
+      cebraspe: {
+        apiUrl: e.CEBRASPE_API_URL,
+        siteUrl: e.CEBRASPE_SITE_URL,
+        requestDelayMs: e.CEBRASPE_REQUEST_DELAY_MS,
+      },
     },
     stripe: {
       secretKey: e.STRIPE_SECRET_KEY,

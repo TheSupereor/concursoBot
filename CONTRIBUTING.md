@@ -42,11 +42,13 @@ database per spec file, built by the real migrations:
 npm run test:integration
 ```
 
-The scraper depends on a third-party page layout. `npm run scraper:check` reads the live site
-(five polite requests) and fails when the parser no longer understands it; CI runs it weekly:
+The vacancy sources depend on third-party formats (an HTML page, an undocumented JSON API).
+`npm run scraper:check` reads every live source once, politely, and fails when an adapter no
+longer understands it; CI runs it weekly. Pass a source id to check only that one:
 
 ```bash
 npm run build && npm run scraper:check
+npm run build && npm run scraper:check -- cebraspe
 ```
 
 The end-to-end smoke test runs the real app against MySQL and RabbitMQ with a fake Telegram API:

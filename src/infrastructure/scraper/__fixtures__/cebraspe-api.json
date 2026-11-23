@@ -1,0 +1,246 @@
+{
+  "recordedAt": "2026-11-23",
+  "phases": {
+    "novos": [
+      {
+        "faseEvento": "Novos",
+        "ordem": 0,
+        "eventos": [
+          {
+            "idEvento": 0,
+            "eventoNomeAbreviado": "TJ CE 25 NOTÁRIOS",
+            "eventoNomeCompleto": null,
+            "eventoTotalVagas": "44",
+            "eventoSalarioMaximo": 0,
+            "strEventoSalarioMaximo": "R$ 0,00",
+            "eventoURL": "TJ_CE_25_NOTARIOS",
+            "eventoStatus": "novos",
+            "eventoTipo": "concursos",
+            "eventoAno": 2025,
+            "periodoInscricao": null,
+            "eventoCargos": null,
+            "arquivosEdital": null,
+            "arquivosGabarito": null,
+            "aplicativos": null,
+            "isInscricaoAberta": false,
+            "isDBCriado": 0,
+            "tituloCargos": "Cargos",
+            "tituloCardCargos": "Cargo",
+            "areaCandidato": false
+          }
+        ]
+      }
+    ],
+    "inscricoes-abertas": [
+      {
+        "faseEvento": "Inscrições Abertas",
+        "ordem": 1,
+        "eventos": [
+          {
+            "idEvento": 0,
+            "eventoNomeAbreviado": "PC PE 26",
+            "eventoNomeCompleto": null,
+            "eventoTotalVagas": "1315",
+            "eventoSalarioMaximo": 13560,
+            "strEventoSalarioMaximo": "R$ 13.560,00",
+            "eventoURL": "PC_PE_26",
+            "eventoStatus": "inscricoes-abertas",
+            "eventoTipo": "concursos",
+            "eventoAno": 2026,
+            "periodoInscricao": null,
+            "eventoCargos": null,
+            "arquivosEdital": null,
+            "arquivosGabarito": null,
+            "aplicativos": null,
+            "isInscricaoAberta": false,
+            "isDBCriado": 0,
+            "tituloCargos": "Cargos",
+            "tituloCardCargos": "Cargo",
+            "areaCandidato": true
+          },
+          {
+            "idEvento": 0,
+            "eventoNomeAbreviado": "SEAP PE 26",
+            "eventoNomeCompleto": null,
+            "eventoTotalVagas": "700",
+            "eventoSalarioMaximo": 5667.92,
+            "strEventoSalarioMaximo": "R$ 5.667,92",
+            "eventoURL": "SEAP_PE_26",
+            "eventoStatus": "inscricoes-abertas",
+            "eventoTipo": "concursos",
+            "eventoAno": 2026,
+            "periodoInscricao": null,
+            "eventoCargos": null,
+            "arquivosEdital": null,
+            "arquivosGabarito": null,
+            "aplicativos": null,
+            "isInscricaoAberta": false,
+            "isDBCriado": 0,
+            "tituloCargos": "Cargos",
+            "tituloCardCargos": "Cargo",
+            "areaCandidato": true
+          }
+        ]
+      }
+    ]
+  },
+  "events": {
+    "TJ_CE_25_NOTARIOS": {
+      "idEvento": 3194,
+      "eventoNomeAbreviado": "TJ CE 25 NOTÁRIOS",
+      "eventoNomeCompleto": "TJ CE 25 NOTÁRIOS",
+      "eventoTotalVagas": "44",
+      "eventoSalarioMaximo": 0,
+      "strEventoSalarioMaximo": "R$ 0,00",
+      "eventoURL": "TJ_CE_25_NOTARIOS",
+      "eventoStatus": "Abertura",
+      "eventoTipo": "concursos",
+      "eventoAno": 2025,
+      "periodoInscricao": "",
+      "eventoCargos": [
+        {
+          "idArea": "01",
+          "area": "Provimento"
+        },
+        {
+          "idArea": "02",
+          "area": "Remoção"
+        }
+      ],
+      "arquivosEdital": [
+        {
+          "tipoExtensaoArquivo": "_.html",
+          "dataArquivo": "24/10/2025 10:15",
+          "nomeArquivo": "1B881A6147C4D5673E4CD6277FFEBC07FB3632EC5645228C8DE58E69A507017C.html",
+          "descricaoArquivo": "Edital nº 7 – Suspensão do Concurso Público - em VLibras",
+          "isDataValid": true,
+          "isGuid": false,
+          "dataArquivoObj": "2025-10-24T10:15:10"
+        },
+        {
+          "tipoExtensaoArquivo": "_.pdf",
+          "dataArquivo": "24/10/2025 10:15",
+          "nomeArquivo": "270F066BFA20E8589493F073D69D58AA96351C1B55BF7FDAF850676581FEF261.pdf",
+          "descricaoArquivo": "Edital nº 7 – Suspensão do Concurso Público",
+          "isDataValid": true,
+          "isGuid": false,
+          "dataArquivoObj": "2025-10-24T10:15:00"
+        }
+      ],
+      "arquivosGabarito": [],
+      "aplicativos": null,
+      "isInscricaoAberta": false,
+      "isDBCriado": 0,
+      "tituloCargos": "Cargos",
+      "tituloCardCargos": "Cargo",
+      "areaCandidato": false
+    },
+    "PC_PE_26": {
+      "idEvento": 3389,
+      "eventoNomeAbreviado": "PC PE 26",
+      "eventoNomeCompleto": "PC PE 26",
+      "eventoTotalVagas": "1315",
+      "eventoSalarioMaximo": 13560,
+      "strEventoSalarioMaximo": "R$ 13.560,00",
+      "eventoURL": "PC_PE_26",
+      "eventoStatus": "Abertura",
+      "eventoTipo": "concursos",
+      "eventoAno": 2026,
+      "periodoInscricao": "De 15/10/2026 até 16/12/2026 às 18:00, horário oficial de Brasília/DF",
+      "eventoCargos": [
+        {
+          "idArea": "01",
+          "area": "Cargo 1: Agente de Polícia"
+        },
+        {
+          "idArea": "02",
+          "area": "Cargo 2: Delegado de Polícia"
+        },
+        {
+          "idArea": "03",
+          "area": "Cargo 3: Escrivão de Polícia"
+        }
+      ],
+      "arquivosEdital": [
+        {
+          "tipoExtensaoArquivo": "_.html",
+          "dataArquivo": "11/11/2026 15:01",
+          "nomeArquivo": "71BF5ECDD1662E8EA942932E63E49C4A2BFE188F940554867E9DED26577054E9.html",
+          "descricaoArquivo": "Edital nº 3 - Retificação dos subitens 2.2, 5.1.10, 5.1.12.1, 11.11.4.1 a 11.11.4.10 e 20.9 do Edital nº 1, bem como a inclusão das alíneas “a” a “f” no inciso IV do subitem 10.16, no referido edital - em VLibras",
+          "isDataValid": true,
+          "isGuid": false,
+          "dataArquivoObj": "2026-11-11T15:01:00"
+        },
+        {
+          "tipoExtensaoArquivo": "_.pdf",
+          "dataArquivo": "11/11/2026 15:00",
+          "nomeArquivo": "95BF4127E54CA73F44CAB3305F87A4E6480E25D7D7E1B580AC64F98E0A48824A.pdf",
+          "descricaoArquivo": "Edital nº 3 - Retificação dos subitens 2.2, 5.1.10, 5.1.12.1, 11.11.4.1 a 11.11.4.10 e 20.9 do Edital nº 1, bem como a inclusão das alíneas “a” a “f” no inciso IV do subitem 10.16, no referido edital",
+          "isDataValid": true,
+          "isGuid": false,
+          "dataArquivoObj": "2026-11-11T15:00:00"
+        }
+      ],
+      "arquivosGabarito": [],
+      "aplicativos": [
+        {
+          "nomeAplicativo": "Área do candidato",
+          "link": "https://areadocandidato.cebraspe.org.br/Login",
+          "strDataInicio": "28/10/2026 17:34",
+          "dataInicio": "2026-10-28T17:34:00"
+        }
+      ],
+      "isInscricaoAberta": true,
+      "isDBCriado": 0,
+      "tituloCargos": "Cargos",
+      "tituloCardCargos": "Cargo",
+      "areaCandidato": true
+    },
+    "SEAP_PE_26": {
+      "idEvento": 3394,
+      "eventoNomeAbreviado": "SEAP PE 26",
+      "eventoNomeCompleto": "SEAP PE 26",
+      "eventoTotalVagas": "700",
+      "eventoSalarioMaximo": 5667.92,
+      "strEventoSalarioMaximo": "R$ 5.667,92",
+      "eventoURL": "SEAP_PE_26",
+      "eventoStatus": "Abertura",
+      "eventoTipo": "concursos",
+      "eventoAno": 2026,
+      "periodoInscricao": "De 12/11/2026 até 04/01/2027 às 18:00, horário oficial de Brasília/DF",
+      "eventoCargos": [
+        {
+          "idArea": "01",
+          "area": "CARGO DE POLICIAL PENAL DO ESTADO"
+        }
+      ],
+      "arquivosEdital": [
+        {
+          "tipoExtensaoArquivo": "_.html",
+          "dataArquivo": "04/11/2026 10:31",
+          "nomeArquivo": "45CFBB8469E5A932B98D807E0806D99F68F24CDF0A498F2E1D8D330E7716B1B4.html",
+          "descricaoArquivo": "Edital nº 1 - Abertura - em VLibras",
+          "isDataValid": true,
+          "isGuid": false,
+          "dataArquivoObj": "2026-11-04T10:31:00"
+        },
+        {
+          "tipoExtensaoArquivo": "_.pdf",
+          "dataArquivo": "04/11/2026 10:30",
+          "nomeArquivo": "2327822CE642EE75B289D1FEF1BD0A9FCD699F971AC65A85CA07D3786DCF7AC4.pdf",
+          "descricaoArquivo": "Edital nº 1 - Abertura",
+          "isDataValid": true,
+          "isGuid": false,
+          "dataArquivoObj": "2026-11-04T10:30:00"
+        }
+      ],
+      "arquivosGabarito": [],
+      "aplicativos": null,
+      "isInscricaoAberta": true,
+      "isDBCriado": 0,
+      "tituloCargos": "Cargos",
+      "tituloCardCargos": "Cargo",
+      "areaCandidato": true
+    }
+  }
+}
