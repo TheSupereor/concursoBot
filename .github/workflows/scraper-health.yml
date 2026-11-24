@@ -1,7 +1,7 @@
 name: Scraper health
 
-# The scraped site is not an API: its markup changes without notice. Once a week this reads the
-# real listings (five polite requests) and fails if the parser no longer understands them, so a
+# The vacancy sources are not documented APIs: their formats change without notice. Once a week this
+# reads every live source (a few polite requests each) and fails if an adapter no longer understands it, so a
 # layout change is noticed in days instead of months.
 on:
   schedule:

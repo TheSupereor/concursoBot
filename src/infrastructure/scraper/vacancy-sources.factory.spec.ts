@@ -2,6 +2,7 @@ import {
   AppConfig,
   KNOWN_VACANCY_SOURCES,
 } from '../../shared/config/app.config';
+import { CEBRASPE_SOURCE_ID } from './cebraspe.source';
 import { PCI_SOURCE_ID } from './pci-concursos.source';
 import { createVacancySources } from './vacancy-sources.factory';
 
@@ -13,6 +14,11 @@ const config = (enabledSources: string[]): AppConfig =>
       runOnStart: false,
       userAgent: 'TestBot/1.0',
       pci: { baseUrl: 'https://pci.example.test', pageDelayMs: 0 },
+      cebraspe: {
+        apiUrl: 'https://api.example.test/cebraspe',
+        siteUrl: 'https://cebraspe.example.test',
+        requestDelayMs: 0,
+      },
     },
   }) as unknown as AppConfig;
 
@@ -25,6 +31,17 @@ describe('createVacancySources', () => {
     const sources = createVacancySources(config([PCI_SOURCE_ID]));
 
     expect(sources.map((source) => source.id)).toEqual([PCI_SOURCE_ID]);
+  });
+
+  it('builds every enabled source, in order', () => {
+    const sources = createVacancySources(
+      config([CEBRASPE_SOURCE_ID, PCI_SOURCE_ID]),
+    );
+
+    expect(sources.map((source) => source.id)).toEqual([
+      CEBRASPE_SOURCE_ID,
+      PCI_SOURCE_ID,
+    ]);
   });
 
   it('fails clearly for a source it does not know', () => {

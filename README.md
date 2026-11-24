@@ -56,6 +56,7 @@ Legend: ✅ done · 🚧 in progress · 📋 planned
 
 ### What changed recently
 
+- **New source: Cebraspe**, one of the largest exam organizers, read from the JSON API behind its website instead of HTML. Competitions just announced or open for registration become alerts, with roles, total openings, maximum salary and registration deadline, and a link to the organizer's page. Every response is validated, so a format change fails loudly instead of yielding nothing, and the weekly live check now covers both sources. This is the first step away from depending on a commercial aggregator (ADR 0015).
 - Phase 0 complete: Docker image and full-stack compose file, GitHub Actions pipeline, Conventional Commits, secret scanning.
 - Phase 1 complete: new users start inactive, atomic notification idempotency, delivery failures propagate to retries and the DLQ, a single RabbitMQ topology, idempotent Stripe webhooks with the Telegram id on the subscription, and escaped HTML alerts.
 - Phase 2 so far: kebab-case file names; domain and application layers free of TypeORM and NestJS; typed domain errors and an immutable, validated `Preference`; environment validated once at startup (zod) and injected as typed config; one Stripe client and one Telegraf client; the app split into feature modules (`src/modules`).

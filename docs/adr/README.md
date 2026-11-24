@@ -20,3 +20,4 @@ supersedes it.
 | [0012](0012-vacancy-ingestion.md)                  | Vacancy ingestion: stable ids, publish before recording, several areas | Accepted                                                           |
 | [0013](0013-vacancy-source-policy.md)              | Vacancy source policy: polite by construction, opt-in in production    | Accepted, one question open                                        |
 | [0014](0014-ci-quality-gates.md)                   | CI quality gates                                                       | Accepted, audit level below target                                 |
+| [0015](0015-official-vacancy-sources.md)           | Official gazettes as vacancy sources, replacing HTML scraping          | Accepted, Cebraspe done, other sources pending                     |
